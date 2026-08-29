@@ -1,0 +1,8 @@
+{
+  "name": "StudySync AI",
+  "description": "AI-powered peer tutor matching, smart scheduling, gamified student learning, and study analytics platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

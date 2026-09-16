@@ -1,0 +1,333 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Subtle Blue Ambient Radial Glow Behind Logo -->
+    <radialGradient id="trans-blue-glow" cx="28%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#2563EB" stop-opacity="0.35" />
+      <stop offset="45%" stop-color="#4F46E5" stop-opacity="0.18" />
+      <stop offset="80%" stop-color="#06B6D4" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#2563EB" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Secondary Soft Cyan Glow directly behind S Icon -->
+    <radialGradient id="trans-cyan-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.4" />
+      <stop offset="60%" stop-color="#3B82F6" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- 3D Ribbon Main Gradient: Cyan (#06B6D4) -> Blue (#3B82F6) -> Indigo (#4F46E5) -> Purple (#7C3AED) -->
+    <linearGradient id="trans-ribbon-s" x1="10%" y1="5%" x2="90%" y2="95%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="30%" stop-color="#3B82F6" />
+      <stop offset="68%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <!-- Upper Ribbon Band for 3D Depth & Lighting -->
+    <linearGradient id="trans-ribbon-upper" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="40%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+
+    <!-- Lower Ribbon Band for 3D Under-fold Depth -->
+    <linearGradient id="trans-ribbon-lower" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="45%" stop-color="#4F46E5" />
+      <stop offset="80%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Glossy Specular Surface Sheen (3D Highlight Ridge) -->
+    <linearGradient id="trans-specular" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Glowing Cyan Accents for Circuit & Nodes -->
+    <linearGradient id="trans-cyan-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#67E8F9" />
+    </linearGradient>
+
+    <!-- "AI" Text Blue-Purple-Cyan Gradient -->
+    <linearGradient id="trans-ai-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="32%" stop-color="#38BDF8" />
+      <stop offset="68%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+
+    <!-- Ribbon Drop Shadow -->
+    <filter id="trans-ribbon-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0284C7" flood-opacity="0.45" />
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#4F46E5" flood-opacity="0.6" />
+    </filter>
+
+    <!-- Neon Glow Filter for AI Circuit & Nodes -->
+    <filter id="trans-node-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <!-- Luminous Bloom -->
+    <filter id="trans-bloom" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur2" />
+      <feComposite in="SourceGraphic" in2="blur2" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Transparent Background: Subtle Ambient Blue Glow -->
+  <rect width="760" height="220" fill="url(#trans-blue-glow)" />
+
+  <!-- ==================== LEFT: LARGE FUTURISTIC RIBBON "S" ICON ==================== -->
+  <g id="studysync-symbol-trans" transform="translate(48, 22)">
+    <!-- Soft Cyan Radial Aura directly behind S emblem -->
+    <ellipse cx="85" cy="88" rx="72" ry="72" fill="url(#trans-cyan-glow)" />
+
+    <!-- 1. 3D Ribbon-Style Letter "S" Formed by Smooth Flowing Bands -->
+    <g filter="url(#trans-ribbon-shadow)">
+      <!-- Outer/Back Flowing Band for 3D Volumetric Thickness -->
+      <path
+        d="M 112,42 C 112,42 68,34 50,50 C 32,66 36,88 60,98 C 80,106 102,110 95,130 C 86,148 62,152 42,140 C 36,136 32,127 32,127"
+        stroke="#1E1B4B"
+        stroke-width="22"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        opacity="0.8"
+      />
+
+      <!-- Primary 3D Ribbon Body with Rich Cyan -> Blue -> Indigo -> Purple Flow -->
+      <path
+        d="M 112,42 C 112,42 68,34 50,50 C 32,66 36,88 60,98 C 80,106 102,110 95,130 C 86,148 62,152 42,140 C 36,136 32,127 32,127"
+        stroke="url(#trans-ribbon-s)"
+        stroke-width="18"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Inner Ribbon Fold Layer for 3D Ribbon Twist -->
+      <path
+        d="M 60,98 C 74,104 90,108 92,120 C 94,128 89,136 78,142"
+        stroke="url(#trans-ribbon-lower)"
+        stroke-width="10"
+        stroke-linecap="round"
+        opacity="0.9"
+      />
+
+      <!-- Glossy Specular Surface Reflection (Curved 3D Highlight Spine) -->
+      <path
+        d="M 106,43 C 74,37 56,49 53,65 C 51,81 70,91 84,97 C 98,105 105,116 100,131 C 94,144 74,147 52,140"
+        stroke="url(#trans-specular)"
+        stroke-width="3.8"
+        stroke-linecap="round"
+        fill="none"
+      />
+
+      <!-- Micro Laser Light Filament Edge -->
+      <path
+        d="M 108,42 C 72,36 53,52 54,67 C 55,83 75,93 88,101 C 103,109 108,124 102,136 C 94,149 70,150 44,141"
+        stroke="#FFFFFF"
+        stroke-width="1.2"
+        stroke-linecap="round"
+        stroke-opacity="0.85"
+        fill="none"
+      />
+    </g>
+
+    <!-- 2. Integrated Graduation Cap on the Top Section of the S -->
+    <g id="graduation-cap-crest-trans">
+      <!-- 3D Mortarboard Diamond Platform -->
+      <polygon points="86,8 126,22 86,36 46,22" fill="#1E1B4B" stroke="#4F46E5" stroke-width="1.5" />
+      <polygon points="86,8 126,22 86,36 46,22" fill="url(#trans-ribbon-upper)" opacity="0.92" />
+      
+      <!-- Crisp Specular Light on Leading Mortarboard Edge -->
+      <polyline points="46,22 86,8 126,22" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.95" />
+
+      <!-- Mortarboard Skullcap Base -->
+      <path d="M 64,28 L 86,36 L 108,28 L 108,35 L 86,43 L 64,35 Z" fill="#0F172A" stroke="#3B82F6" stroke-width="0.8" />
+
+      <!-- Center Button / Pivot Stud -->
+      <ellipse cx="86,22" rx="3.2" ry="2.2" fill="#FFFFFF" filter="url(#trans-node-glow)" />
+
+      <!-- Flowing Graduation Tassel Draping Across Ribbon Curve -->
+      <path
+        d="M 86,22 C 102,23 118,31 122,44 C 124,52 122,60 117,68"
+        stroke="url(#trans-cyan-accent)"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        fill="none"
+        filter="url(#trans-node-glow)"
+      />
+      <!-- Tassel Terminal Bulb & Bright Core -->
+      <circle cx="117" cy="68" r="3.8" fill="#06B6D4" filter="url(#trans-bloom)" />
+      <circle cx="117" cy="68" r="1.6" fill="#FFFFFF" />
+    </g>
+
+    <!-- 3. Connected Student Nodes & Curved Connection Paths Across the Center -->
+    <g id="student-nodes-network-trans">
+      <!-- Smooth Curved Synaptic Connection Paths Across Center -->
+      <path
+        d="M 52,72 C 64,66 74,68 84,65"
+        stroke="#22D3EE"
+        stroke-width="2"
+        stroke-dasharray="3 2"
+        stroke-linecap="round"
+        filter="url(#trans-node-glow)"
+        opacity="0.95"
+      />
+      <path
+        d="M 84,65 C 96,62 104,70 108,76"
+        stroke="#818CF8"
+        stroke-width="2"
+        stroke-dasharray="3 2"
+        stroke-linecap="round"
+        opacity="0.9"
+      />
+      <path
+        d="M 62,88 C 74,84 86,84 94,92"
+        stroke="#38BDF8"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        filter="url(#trans-node-glow)"
+      />
+      <path
+        d="M 84,65 C 88,74 90,82 94,92"
+        stroke="#67E8F9"
+        stroke-width="1.8"
+        stroke-dasharray="2.5 2"
+        opacity="0.85"
+      />
+      <path
+        d="M 62,88 C 66,98 72,106 78,112"
+        stroke="#A855F7"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        opacity="0.8"
+      />
+
+      <!-- Student Connection Nodes (Luminescent Rings & White Core) -->
+      <circle cx="52" cy="72" r="4.5" fill="#06B6D4" filter="url(#trans-node-glow)" />
+      <circle cx="52" cy="72" r="2" fill="#FFFFFF" />
+
+      <circle cx="84" cy="65" r="5" fill="#7C3AED" filter="url(#trans-node-glow)" />
+      <circle cx="84" cy="65" r="2.2" fill="#FFFFFF" />
+
+      <circle cx="108" cy="76" r="4.5" fill="#3B82F6" filter="url(#trans-node-glow)" />
+      <circle cx="108" cy="76" r="1.8" fill="#FFFFFF" />
+
+      <!-- Main Central AI Tutor Hub -->
+      <circle cx="94" cy="92" r="6.2" fill="#4F46E5" filter="url(#trans-node-glow)" />
+      <circle cx="94" cy="92" r="3.6" fill="#06B6D4" />
+      <circle cx="94" cy="92" r="1.8" fill="#FFFFFF" />
+
+      <!-- Transition Nodes -->
+      <circle cx="62" cy="88" r="4.8" fill="#06B6D4" filter="url(#trans-node-glow)" />
+      <circle cx="62" cy="88" r="2" fill="#FFFFFF" />
+
+      <circle cx="78" cy="112" r="4.2" fill="#A855F7" filter="url(#trans-node-glow)" />
+      <circle cx="78" cy="112" r="1.7" fill="#FFFFFF" />
+    </g>
+
+    <!-- 4. AI Circuit Board Traces Embedded at the Bottom of the S -->
+    <g id="ai-circuit-traces-trans">
+      <!-- Circuit Bus Line 1 (Upper 45-degree angled trace) -->
+      <path
+        d="M 58,124 L 70,124 L 80,116 L 102,116"
+        stroke="#22D3EE"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        filter="url(#trans-node-glow)"
+      />
+      <!-- Terminal Contact Via 1 -->
+      <circle cx="102" cy="116" r="3.6" fill="#06B6D4" filter="url(#trans-bloom)" />
+      <circle cx="102" cy="116" r="1.5" fill="#FFFFFF" />
+
+      <!-- Circuit Bus Line 2 (Lower 45-degree trace) -->
+      <path
+        d="M 52,136 L 68,136 L 78,146 L 92,146"
+        stroke="#67E8F9"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <!-- Terminal Contact Via 2 -->
+      <circle cx="92" cy="146" r="3.2" fill="#38BDF8" />
+      <circle cx="92" cy="146" r="1.4" fill="#FFFFFF" />
+
+      <!-- Circuit Vertical Interconnect Bus -->
+      <path d="M 68,124 L 68,136" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" />
+      <circle cx="68" cy="124" r="1.8" fill="#22D3EE" />
+      <circle cx="68" cy="136" r="1.8" fill="#22D3EE" />
+
+      <!-- Microchip Pins & Additional IC Contact Pads -->
+      <circle cx="76" cy="120" r="1.6" fill="#22D3EE" />
+      <circle cx="86" cy="130" r="1.6" fill="#67E8F9" />
+      <path d="M 80,130 L 86,130" stroke="#22D3EE" stroke-width="1.5" stroke-linecap="round" />
+      <circle cx="80" cy="130" r="1.4" fill="#22D3EE" />
+    </g>
+  </g>
+
+  <!-- ==================== RIGHT: EXACT TYPOGRAPHY (WHITE + GRADIENT) ==================== -->
+  <g id="typography-lockup-trans" transform="translate(240, 72)">
+    <!-- "StudySync" in Large Bold Pure White Modern Geometric Sans-Serif Font -->
+    <text
+      x="0"
+      y="54"
+      font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="64"
+      font-weight="800"
+      letter-spacing="-0.035em"
+      fill="#FFFFFF"
+    >
+      StudySync
+    </text>
+
+    <!-- "AI" Separately in Blue-Purple-Cyan Gradient with Luminous Glow -->
+    <g transform="translate(345, 0)">
+      <text
+        x="0"
+        y="54"
+        font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="64"
+        font-weight="900"
+        letter-spacing="-0.02em"
+        fill="url(#trans-ai-grad)"
+        filter="url(#trans-bloom)"
+        opacity="0.4"
+      >
+        AI
+      </text>
+      <text
+        x="0"
+        y="54"
+        font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="64"
+        font-weight="900"
+        letter-spacing="-0.02em"
+        fill="url(#trans-ai-grad)"
+      >
+        AI
+      </text>
+    </g>
+
+    <!-- Modern Minimalist Subtitle / Category Descriptor -->
+    <g transform="translate(4, 82)">
+      <text
+        x="0"
+        y="0"
+        font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        font-size="13.5"
+        font-weight="700"
+        letter-spacing="0.28em"
+        fill="#94A3B8"
+      >
+        INTELLIGENT PEER TUTOR MATCHING
+      </text>
+      <line x1="0" y1="9" x2="110" y2="9" stroke="url(#trans-cyan-accent)" stroke-width="2.6" stroke-linecap="round" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,260 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" fill="none">
+  <defs>
+    <!-- Brand Gradients: Deep Indigo (#4F46E5) -> Purple (#7C3AED) -> Cyan (#06B6D4) -->
+    <linearGradient id="exact-ribbon-s" x1="12%" y1="8%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="48%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Upper Ribbon Band for 3D Depth -->
+    <linearGradient id="exact-ribbon-top" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1" />
+      <stop offset="50%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#4338CA" />
+    </linearGradient>
+
+    <!-- Lower Ribbon Band for 3D Depth -->
+    <linearGradient id="exact-ribbon-bot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="50%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+
+    <!-- Glossy Specular Sheen -->
+    <linearGradient id="exact-specular" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9" />
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Glowing Cyan Accents -->
+    <linearGradient id="exact-cyan-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#22D3EE" />
+      <stop offset="100%" stop-color="#67E8F9" />
+    </linearGradient>
+
+    <!-- AI Text Blue-Purple-Cyan Gradient -->
+    <linearGradient id="exact-ai-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="30%" stop-color="#38BDF8" />
+      <stop offset="65%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+
+    <!-- Ambient Shadow for 3D Ribbon -->
+    <filter id="exact-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#4F46E5" flood-opacity="0.32" />
+    </filter>
+
+    <!-- Neon Glow Filter for AI Circuit & Nodes -->
+    <filter id="exact-node-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- ==================== LEFT: EXACT ICON (S-RIBBON + CAP + NODES + CIRCUITS) ==================== -->
+  <g id="exact-icon-symbol" transform="translate(10, 5)">
+    <!-- Ambient Backlight Aura -->
+    <circle cx="56" cy="56" r="44" fill="#4F46E5" opacity="0.1" filter="url(#exact-node-glow)" />
+    <circle cx="56" cy="56" r="30" fill="#06B6D4" opacity="0.08" filter="url(#exact-node-glow)" />
+
+    <!-- 1. 3D Ribbon-Style Letter "S" -->
+    <g filter="url(#exact-shadow)">
+      <!-- Main Ribbon Path: Smooth 3D Flowing Curve -->
+      <path
+        d="M 72,28 C 72,28 44,23 33,33 C 22,43 24,57 39,63 C 51,68 64,70 60,82 C 55,94 40,96 28,89 C 24,86.5 22,81 22,81"
+        stroke="url(#exact-ribbon-s)"
+        stroke-width="12"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+
+      <!-- Ribbon Depth Underlap (Backside Fold Shadow) -->
+      <path
+        d="M 39,63 C 47,66.5 56,69 58,76 C 59,80 57,84 52,88"
+        stroke="#312E81"
+        stroke-width="6"
+        stroke-linecap="round"
+        opacity="0.4"
+      />
+
+      <!-- Glossy Specular Surface Reflection (White highlight ridge) -->
+      <path
+        d="M 68,29 C 47,25 36,33 35,43 C 34,53 46,59 55,63 C 64,68 68,75 65,84 C 61,92 48,93 34,89"
+        stroke="url(#exact-specular)"
+        stroke-width="2.6"
+        stroke-linecap="round"
+        fill="none"
+      />
+
+      <!-- Micro Razor Light Filament -->
+      <path
+        d="M 70,28 C 45,24 34,35 35,45 C 36,55 49,61 58,66 C 68,71 71,80 67,88 C 61,96 46,96 29,90"
+        stroke="#FFFFFF"
+        stroke-width="0.9"
+        stroke-linecap="round"
+        stroke-opacity="0.65"
+        fill="none"
+      />
+    </g>
+
+    <!-- 2. Integrated Graduation Cap on the Top Section of the S -->
+    <g id="graduation-cap-crest">
+      <!-- Diamond Mortarboard Platform with 3D Tilt -->
+      <polygon points="56,7 80,16 56,25 32,16" fill="#4338CA" stroke="#818CF8" stroke-width="1" />
+      <polygon points="56,7 80,16 56,25 32,16" fill="url(#exact-ribbon-top)" opacity="0.85" />
+      
+      <!-- Specular Highlight along Front Bevel -->
+      <polyline points="32,16 56,7 80,16" stroke="#FFFFFF" stroke-width="1.3" fill="none" opacity="0.9" />
+
+      <!-- Skullcap Underside Ring -->
+      <path d="M 42,19.5 L 56,25 L 70,19.5 L 70,24 L 56,29 L 42,24 Z" fill="#1E1B4B" />
+
+      <!-- Center Gold/White Button -->
+      <ellipse cx="56" cy="16" rx="2.2" ry="1.5" fill="#FFFFFF" />
+
+      <!-- Flowing Tassel Sweeping gracefully across the top curve -->
+      <path
+        d="M 56,16 C 67,17 76,22 78,30 C 79,35 78,40 75,45"
+        stroke="url(#exact-cyan-glow)"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        fill="none"
+      />
+      <circle cx="75" cy="45" r="2.4" fill="#06B6D4" filter="url(#exact-node-glow)" />
+      <circle cx="75" cy="45" r="1" fill="#FFFFFF" />
+    </g>
+
+    <!-- 3. Connected Student Nodes and Connection Lines Across the Center of the S -->
+    <g id="student-nodes-center">
+      <!-- Synaptic Connection Network Lines across the S center loop -->
+      <path d="M 36,46 L 50,42" stroke="#22D3EE" stroke-width="1.3" stroke-dasharray="2 1.5" stroke-opacity="0.85" />
+      <path d="M 50,42 L 64,48" stroke="#818CF8" stroke-width="1.3" stroke-dasharray="2 1.5" stroke-opacity="0.85" />
+      <path d="M 42,58 L 56,54" stroke="#22D3EE" stroke-width="1.5" stroke-dasharray="2 1.5" stroke-opacity="0.9" />
+      <path d="M 56,54 L 70,60" stroke="#A855F7" stroke-width="1.5" stroke-dasharray="2 1.5" stroke-opacity="0.9" />
+      <path d="M 50,42 L 56,54" stroke="#67E8F9" stroke-width="1.2" stroke-opacity="0.75" />
+      <path d="M 42,58 L 48,68" stroke="#38BDF8" stroke-width="1.2" stroke-dasharray="2 1.5" stroke-opacity="0.75" />
+
+      <!-- Center Student / Peer Nodes with Luminescent Outer Rings -->
+      <!-- Node A (Top center) -->
+      <circle cx="50" cy="42" r="3.2" fill="#7C3AED" filter="url(#exact-node-glow)" />
+      <circle cx="50" cy="42" r="1.3" fill="#FFFFFF" />
+
+      <!-- Node B (Left crossover) -->
+      <circle cx="42" cy="58" r="3.5" fill="#06B6D4" filter="url(#exact-node-glow)" />
+      <circle cx="42" cy="58" r="1.4" fill="#FFFFFF" />
+
+      <!-- Node C (Central Core Tutor Hub) -->
+      <circle cx="56" cy="54" r="4.2" fill="#4F46E5" filter="url(#exact-node-glow)" />
+      <circle cx="56" cy="54" r="2.5" fill="#22D3EE" />
+      <circle cx="56" cy="54" r="1.1" fill="#FFFFFF" />
+
+      <!-- Node D (Right crossover) -->
+      <circle cx="70" cy="60" r="3.4" fill="#9333EA" filter="url(#exact-node-glow)" />
+      <circle cx="70" cy="60" r="1.3" fill="#FFFFFF" />
+
+      <!-- Node E (Mid-low transition) -->
+      <circle cx="48" cy="68" r="3" fill="#06B6D4" />
+      <circle cx="48" cy="68" r="1.2" fill="#FFFFFF" />
+
+      <!-- Node F (Far upper-right peer) -->
+      <circle cx="64" cy="48" r="2.8" fill="#818CF8" />
+      <circle cx="64" cy="48" r="1" fill="#FFFFFF" />
+    </g>
+
+    <!-- 4. AI Circuit Board Traces Embedded at the Bottom of the S -->
+    <g id="ai-circuits-bottom">
+      <!-- Circuit Bus Line 1 (Upper trace with 45° angle & terminal contact pad) -->
+      <path
+        d="M 38,78 L 46,78 L 53,72 L 67,72"
+        stroke="#22D3EE"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <!-- Terminal Contact Via 1 -->
+      <circle cx="67" cy="72" r="2.4" fill="#06B6D4" filter="url(#exact-node-glow)" />
+      <circle cx="67" cy="72" r="1" fill="#FFFFFF" />
+
+      <!-- Circuit Bus Line 2 (Lower trace with 45° angle & terminal contact pad) -->
+      <path
+        d="M 34,86 L 44,86 L 52,93 L 60,93"
+        stroke="#67E8F9"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <!-- Terminal Contact Via 2 -->
+      <circle cx="60" cy="93" r="2" fill="#22D3EE" />
+      <circle cx="60" cy="93" r="0.8" fill="#FFFFFF" />
+
+      <!-- Vertical Bridge Trace -->
+      <path d="M 44,78 L 44,86" stroke="#38BDF8" stroke-width="1.3" stroke-linecap="round" />
+      <circle cx="44" cy="78" r="1.2" fill="#38BDF8" />
+      <circle cx="44" cy="86" r="1.2" fill="#38BDF8" />
+
+      <!-- Microchip Pins & Additional Vias -->
+      <circle cx="49" cy="75" r="1.1" fill="#22D3EE" />
+      <circle cx="56" cy="82" r="1.1" fill="#67E8F9" />
+      <path d="M 52,82 L 56,82" stroke="#22D3EE" stroke-width="1" stroke-linecap="round" />
+    </g>
+  </g>
+
+  <!-- ==================== RIGHT: EXACT TEXT ==================== -->
+  <g id="exact-typography" transform="translate(138, 32)">
+    <!-- "StudySync" in bold dark navy modern font (#0A1128 / #0F172A) -->
+    <text
+      x="0"
+      y="48"
+      font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="48"
+      font-weight="800"
+      letter-spacing="-0.035em"
+      fill="#0A1128"
+      class="studysync-exact-title"
+    >
+      StudySync
+    </text>
+
+    <!-- "AI" separately with blue-purple-cyan gradient -->
+    <text
+      x="250"
+      y="48"
+      font-family="'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="48"
+      font-weight="900"
+      letter-spacing="-0.02em"
+      fill="url(#exact-ai-grad)"
+      class="studysync-exact-ai"
+    >
+      AI
+    </text>
+
+    <!-- Minimalist Subtitle / Category -->
+    <text
+      x="2"
+      y="70"
+      font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      font-size="10.5"
+      font-weight="700"
+      letter-spacing="0.22em"
+      fill="#64748B"
+      class="studysync-exact-subtitle"
+    >
+      INTELLIGENT PEER TUTOR MATCHING
+    </text>
+
+    <!-- Horizontal Cyan Gradient Underline Accent -->
+    <line x1="2" y1="78" x2="80" y2="78" stroke="url(#exact-cyan-glow)" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .studysync-exact-title { fill: #FFFFFF !important; }
+      .studysync-exact-subtitle { fill: #94A3B8 !important; }
+    }
+  </style>
+</svg>

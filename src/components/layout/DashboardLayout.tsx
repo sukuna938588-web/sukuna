@@ -1,27 +1,21 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 
-export function DashboardLayout({ children }: { children?: ReactNode }) {
+export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen grid-bg">
-      <div className="flex">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 min-w-0">
-          <Navbar onMenu={() => setSidebarOpen(true)} />
-          <motion.main
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="px-4 lg:px-8 py-6 max-w-7xl mx-auto"
-          >
-            {children ?? <Outlet />}
-          </motion.main>
-        </div>
+    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Navbar onMenu={() => setSidebarOpen((prev) => !prev)} />
+        <main className="flex-1 px-4 lg:px-8 pb-12">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -1,5 +1,13 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { Session, Notification, Student, Subject, UserAccount, SignupInput, ActivityItem } from '@/types';
+import type {
+  Session,
+  Notification,
+  Student,
+  Subject,
+  UserAccount,
+  SignupInput,
+  ActivityItem,
+} from '../types';
 import {
   sessions as initialSessions,
   notifications as initialNotifications,
@@ -7,8 +15,9 @@ import {
   sampleStudents,
   sampleSubjects,
   initialActivities,
-} from '@/data/mockData';
-import { loadState, saveState } from '@/lib/storage';
+} from '../data/mockData';
+import { loadState, saveState } from '../lib/storage';
+import { useToast } from './ToastContext';
 
 interface AuthResponse {
   success: boolean;
@@ -22,16 +31,15 @@ interface DataContext {
   login: (email: string, password: string) => AuthResponse;
   signup: (data: SignupInput) => AuthResponse;
   logout: () => void;
-  updateCurrentUser: (updated: Partial<Student> | Student) => void;
+  updateCurrentUser: (updated: Partial<Student> | Student, isProfileEdit?: boolean) => void;
   sessions: Session[];
   notifications: Notification[];
   addSession: (s: Session) => void;
   createSession: (s: Omit<Session, 'id' | 'status'> & { id?: string; status?: Session['status'] }) => Session;
+  completeSession: (sessionId: string) => void;
   cancelSession: (id: string) => void;
   markNotificationRead: (id: string) => void;
   markAllRead: () => void;
-  xp: number;
-  addXp: (amount: number) => void;
   students: Student[];
   addStudent: (s: Student) => void;
   updateStudent: (s: Student) => void;
@@ -42,6 +50,7 @@ interface DataContext {
   deleteSubject: (id: string) => void;
   activities: ActivityItem[];
   logActivity: (activity: Omit<ActivityItem, 'id' | 'timestamp'> & { timestamp?: string }) => void;
+  recordMatchAccepted: (tutorName: string, subject: string) => void;
   resetSampleData: () => void;
 }
 
@@ -62,6 +71,8 @@ const initialDemoUser: UserAccount = {
 };
 
 export function DataProvider({ children }: { children: ReactNode }) {
+  const { notify } = useToast();
+
   // Stored registered users in localStorage
   const [users, setUsers] = useState<UserAccount[]>(() => {
     const stored = loadState<UserAccount[]>(USERS_KEY, []);
@@ -72,8 +83,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Current authenticated user
   const [currentUser, setCurrentUser] = useState<Student>(() => {
     const stored = loadState<Student | null>(CURRENT_USER_KEY, null);
-    if (stored && stored.id && stored.email) return stored;
-    // Default to initial demo user if previously logged in or initial load
+    if (stored && stored.id && stored.email) {
+      return {
+        ...defaultCurrentUser,
+        ...stored,
+        skills: Array.isArray(stored.skills) && stored.skills.length > 0 ? stored.skills : defaultCurrentUser.skills,
+        availability: Array.isArray(stored.availability) ? stored.availability : defaultCurrentUser.availability,
+        strengths: Array.isArray(stored.strengths) ? stored.strengths : defaultCurrentUser.strengths,
+        weaknesses: Array.isArray(stored.weaknesses) ? stored.weaknesses : defaultCurrentUser.weaknesses,
+        weakSubjects: Array.isArray(stored.weakSubjects) ? stored.weakSubjects : defaultCurrentUser.weakSubjects,
+        learningPreferences: Array.isArray(stored.learningPreferences) ? stored.learningPreferences : defaultCurrentUser.learningPreferences,
+      };
+    }
     return defaultCurrentUser;
   });
 
@@ -90,8 +111,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return loadState<Notification[]>(NOTIFICATIONS_KEY, initialNotifications);
   });
 
-  const [xp, setXp] = useState(currentUser?.xp ?? 0);
-
   const [students, setStudents] = useState<Student[]>(() => {
     const stored = loadState<Student[]>(STUDENTS_KEY, []);
     if (stored.length > 0) return stored;
@@ -100,7 +119,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const [subjects, setSubjects] = useState<Subject[]>(() => {
     const stored = loadState<Subject[]>(SUBJECTS_KEY, []);
-    if (stored.length > 0) return stored;
+    if (stored.length > 0) {
+      return stored.map((s) => {
+        const fallback = sampleSubjects.find(
+          (samp) => samp.id === s.id || samp.name.toLowerCase() === s.name.toLowerCase()
+        );
+        return {
+          ...s,
+          department: s.department || fallback?.department || 'Computer Science',
+          credits: s.credits ?? fallback?.credits ?? 3,
+          description: s.description || fallback?.description || '',
+        };
+      });
+    }
     return sampleSubjects;
   });
 
@@ -148,13 +179,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setActivities((prev) => [newActivity, ...prev]);
   };
 
-  // Keep XP synced with currentUser
-  useEffect(() => {
-    if (currentUser) {
-      setXp(currentUser.xp);
-    }
-  }, [currentUser]);
-
   // Login handler
   const login = (email: string, pass: string): AuthResponse => {
     const cleanEmail = email.trim().toLowerCase();
@@ -172,7 +196,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // Check password
     if (matchedUser.password && matchedUser.password !== cleanPass) {
       return {
         success: false,
@@ -180,7 +203,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // User authenticated successfully
     const activeStudent: Student = {
       ...defaultCurrentUser,
       id: matchedUser.id,
@@ -191,10 +213,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       avatar: matchedUser.avatar,
       rollNumber: matchedUser.rollNumber,
       bio: matchedUser.bio,
-      level: matchedUser.level ?? defaultCurrentUser.level,
-      xp: matchedUser.xp ?? defaultCurrentUser.xp,
-      streak: matchedUser.streak ?? defaultCurrentUser.streak,
-      badges: matchedUser.badges ?? defaultCurrentUser.badges,
       skills: matchedUser.skills ?? defaultCurrentUser.skills,
       weakSubjects: matchedUser.weakSubjects ?? defaultCurrentUser.weakSubjects,
       availability: matchedUser.availability ?? defaultCurrentUser.availability,
@@ -225,7 +243,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return { success: false, error: 'Password must be at least 6 characters long.' };
     }
 
-    // Check duplicate email
     const exists = users.some((u) => u.email.toLowerCase() === cleanEmail);
     if (exists) {
       return {
@@ -266,19 +283,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
         { day: 'Wed', start: '16:00', end: '19:00' },
         { day: 'Fri', start: '14:00', end: '17:00' },
       ],
-      xp: 500,
-      level: 1,
-      streak: 1,
-      badges: ['First Step', 'Early Adopter'],
       createdAt: new Date().toISOString(),
     };
 
-    // Save to users collection
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
     saveState(USERS_KEY, updatedUsers);
 
-    // Add to students directory
     const studentData: Student = {
       id: newUser.id,
       name: newUser.name,
@@ -288,19 +299,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       avatar: newUser.avatar,
       rollNumber: newUser.rollNumber,
       bio: newUser.bio,
-      level: newUser.level,
-      xp: newUser.xp,
-      streak: newUser.streak,
-      badges: newUser.badges,
       skills: newUser.skills,
       weakSubjects: newUser.weakSubjects,
+      strengths: newUser.strengths,
+      weaknesses: newUser.weaknesses,
+      learningPreferences: newUser.learningPreferences,
       availability: newUser.availability,
       rating: newUser.rating,
       role: newUser.role,
     };
     setStudents((prev) => [studentData, ...prev]);
 
-    // Authenticate user immediately
     setCurrentUser(studentData);
     setIsAuthenticated(true);
     saveState(CURRENT_USER_KEY, studentData);
@@ -328,12 +337,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
   };
 
   // Update current user & sync to storage
-  const updateCurrentUser = (updated: Partial<Student> | Student) => {
+  const updateCurrentUser = (updated: Partial<Student> | Student, isProfileEdit = false) => {
     setCurrentUser((prev) => {
       const next = { ...prev, ...updated };
       saveState(CURRENT_USER_KEY, next);
 
-      // Update in users registry
       setUsers((prevUsers) =>
         prevUsers.map((u) => {
           if (u.id === prev.id || u.email.toLowerCase() === prev.email.toLowerCase()) {
@@ -343,13 +351,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
         })
       );
 
-      // Update in students directory
       setStudents((prevStudents) =>
         prevStudents.map((s) => (s.id === prev.id ? { ...s, ...updated } : s))
       );
 
       return next;
     });
+
+    if (isProfileEdit) {
+      notify('Profile updated successfully', 'success');
+    }
 
     logActivity({
       type: 'profile_update',
@@ -358,6 +369,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       userName: (updated as Student).name || currentUser.name,
       userAvatar: currentUser.avatar,
       target: 'Profile & Skills',
+    });
+  };
+
+  const completeSession = (sessionId: string) => {
+    const targetSession = sessions.find((s) => s.id === sessionId);
+    if (!targetSession) return;
+    if (targetSession.status === 'completed') {
+      notify('This session is already marked as completed.', 'info');
+      return;
+    }
+
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? { ...s, status: 'completed' as const } : s))
+    );
+
+    notify('Session marked as completed!', 'success');
+
+    logActivity({
+      type: 'session_booked',
+      title: 'Session Completed',
+      description: `${currentUser.name} completed "${targetSession.subject}" session with ${targetSession.tutorName}`,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      target: targetSession.subject,
     });
   };
 
@@ -396,10 +431,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const markNotificationRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  const addXp = (amount: number) => {
-    setXp((x) => x + amount);
-    updateCurrentUser({ xp: (currentUser?.xp ?? 0) + amount });
-  };
 
   const addStudent = (s: Student) => {
     setStudents((prev) => [...prev, s]);
@@ -422,22 +453,61 @@ export function DataProvider({ children }: { children: ReactNode }) {
       type: 'subject_added',
       title: 'New Subject Added',
       description: `Course "${s.name}" (${s.code}) was added to catalog`,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
       target: s.code,
     });
   };
 
-  const updateSubject = (s: Subject) => setSubjects((prev) => prev.map((x) => (x.id === s.id ? s : x)));
-  const deleteSubject = (id: string) => setSubjects((prev) => prev.filter((x) => x.id !== id));
+  const updateSubject = (s: Subject) => {
+    setSubjects((prev) => prev.map((x) => (x.id === s.id ? s : x)));
+    logActivity({
+      type: 'subject_added',
+      title: 'Subject Updated',
+      description: `Course "${s.name}" (${s.code}) details updated`,
+      target: s.code,
+    });
+  };
+
+  const deleteSubject = (id: string) => {
+    const target = subjects.find((s) => s.id === id);
+    setSubjects((prev) => prev.filter((x) => x.id !== id));
+    if (target) {
+      logActivity({
+        type: 'session_cancelled',
+        title: 'Subject Deleted',
+        description: `Course "${target.name}" (${target.code}) was removed`,
+        target: target.code,
+      });
+    }
+  };
+
+  const recordMatchAccepted = (tutorName: string, subject: string) => {
+    logActivity({
+      type: 'match_found',
+      title: 'Match Accepted',
+      description: `${currentUser.name} accepted AI tutor match with ${tutorName} for ${subject}`,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      target: tutorName,
+    });
+  };
 
   const resetSampleData = () => {
-    setCurrentUser(defaultCurrentUser);
-    saveState(CURRENT_USER_KEY, defaultCurrentUser);
+    const cleanUser = {
+      ...defaultCurrentUser,
+    };
+    setCurrentUser(cleanUser);
+    saveState(CURRENT_USER_KEY, cleanUser);
     setStudents(sampleStudents);
     setSubjects(sampleSubjects);
+    setSessions(initialSessions);
+    setNotifications(initialNotifications);
     setUsers([initialDemoUser]);
     saveState(USERS_KEY, [initialDemoUser]);
     setActivities(initialActivities);
     saveState(ACTIVITIES_KEY, initialActivities);
+    notify('Sample records have been reset.', 'info');
   };
 
   return (
@@ -453,11 +523,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         notifications,
         addSession,
         createSession,
+        completeSession,
         cancelSession,
         markNotificationRead,
         markAllRead,
-        xp,
-        addXp,
         students,
         addStudent,
         updateStudent,
@@ -468,6 +537,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         deleteSubject,
         activities,
         logActivity,
+        recordMatchAccepted,
         resetSampleData,
       }}
     >
@@ -481,4 +551,3 @@ export function useData() {
   if (!ctx) throw new Error('useData must be used within DataProvider');
   return ctx;
 }
-

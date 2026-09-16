@@ -3,6 +3,7 @@ export type Role = 'student' | 'tutor' | 'admin';
 export interface SkillRating {
   subject: string;
   rating: number; // 0-100 mastery
+  category?: string;
 }
 
 export interface AvailabilitySlot {
@@ -18,6 +19,7 @@ export interface Student {
   email: string;
   avatar: string;
   department: string;
+  university?: string;
   year: number;
   strengths: string[];
   weaknesses: string[];
@@ -25,11 +27,10 @@ export interface Student {
   weakSubjects: string[];
   learningPreferences: string[];
   availability: AvailabilitySlot[];
-  xp: number;
-  level: number;
-  streak: number;
-  badges: string[];
   bio: string;
+  rating?: number;
+  role?: Role;
+  streak?: number;
 }
 
 export interface UserAccount extends Student {
@@ -52,7 +53,10 @@ export interface Subject {
   id: string;
   name: string;
   code: string;
+  department?: string;
+  credits?: number;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  description?: string;
 }
 
 export interface Review {
@@ -67,6 +71,7 @@ export interface Review {
 export interface Tutor {
   id: string;
   name: string;
+  title?: string;
   email: string;
   avatar: string;
   department: string;
@@ -109,24 +114,6 @@ export interface Notification {
   read: boolean;
 }
 
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
-}
-
-export interface LeaderboardEntry {
-  rank: number;
-  name: string;
-  avatar: string;
-  xp: number;
-  level: number;
-  streak: number;
-  department: string;
-}
-
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -165,7 +152,7 @@ export interface PeerMatch {
   breakdown: PeerMatchBreakdownItem[];
 }
 
-export type ActivityType = 'signup' | 'profile_update' | 'match_found' | 'session_booked' | 'subject_added';
+export type ActivityType = 'signup' | 'profile_update' | 'match_found' | 'session_booked' | 'subject_added' | 'session_cancelled';
 
 export interface ActivityItem {
   id: string;
@@ -249,7 +236,6 @@ export interface AIStudyPlanBlock {
   durationMinutes: number;
   technique: string;
   focusType: 'Weak Area Recovery' | 'Core Review' | 'Practice Drill' | 'Peer Session' | 'Active Recall';
-  xpReward: number;
   color: string;
   isBooked?: boolean;
 }

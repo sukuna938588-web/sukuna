@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Sparkles, Mail, Lock, Eye, EyeOff, ArrowRight,
+  Mail, Lock, Eye, EyeOff, ArrowRight,
   ShieldCheck, AlertCircle, UserCheck, Sun, Moon
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { ParticleBackground } from '@/components/ui/ParticleBackground';
-import { useData } from '@/context/DataContext';
-import { useToast } from '@/context/ToastContext';
-import { useTheme } from '@/context/ThemeContext';
+import { GlassCard } from '../components/ui/GlassCard';
+import { ParticleBackground } from '../components/ui/ParticleBackground';
+import { useData } from '../context/DataContext';
+import { useToast } from '../context/ToastContext';
+import { useTheme } from '../context/ThemeContext';
+import { StudySyncLogo } from '../components/brand/StudySyncLogo';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -83,13 +84,8 @@ export function LoginPage() {
 
       {/* Top bar with logo and theme toggle */}
       <header className="relative z-20 flex items-center justify-between max-w-6xl mx-auto w-full mb-4">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight">
-            StudySync<span className="text-gradient">AI</span>
-          </span>
+        <Link to="/" className="flex items-center transition-transform hover:scale-[1.02]">
+          <StudySyncLogo variant="navbar" animated />
         </Link>
 
         <div className="flex items-center gap-3">

@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import {
   Search, Plus, Pencil, Trash2, Users, AlertTriangle, RotateCcw,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Modal, Field, ChipInput, SelectField } from '@/components/ui/Modal';
-import { useToast } from '@/context/ToastContext';
-import { useData } from '@/context/DataContext';
-import type { Student } from '@/types';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Modal, Field, ChipInput, SelectField } from '../components/ui/Modal';
+import { useToast } from '../context/ToastContext';
+import { useData } from '../context/DataContext';
+import type { Student } from '../types';
 
 const avatar = (seed: string) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=3366ff,06b6d4`;
@@ -83,10 +83,6 @@ export function StudentsPage() {
         weakSubjects: weaknesses,
         learningPreferences: ['Visual learning', 'Hands-on projects'],
         availability: [],
-        xp: 1000 + Math.floor(Math.random() * 500),
-        level: 5 + Math.floor(Math.random() * 8),
-        streak: Math.floor(Math.random() * 20),
-        badges: ['First Session'],
         bio: 'Student passionate about learning and growth.',
       };
       addStudent(newStudent);

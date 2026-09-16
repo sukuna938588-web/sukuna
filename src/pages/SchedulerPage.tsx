@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Clock, Check, X, Video, MapPin } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { useToast } from '@/context/ToastContext';
-import { useData } from '@/context/DataContext';
-import { tutors } from '@/data/mockData';
-import type { Session } from '@/types';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useToast } from '../context/ToastContext';
+import { useData } from '../context/DataContext';
+import { tutors } from '../data/mockData';
+import type { Session } from '../types';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -13,7 +13,7 @@ const TIME_SLOTS = ['09:00','10:30','12:00','14:00','15:30','17:00','18:30'];
 
 export function SchedulerPage() {
   const { notify } = useToast();
-  const { sessions, addSession, cancelSession, currentUser } = useData();
+  const { sessions, addSession, cancelSession, completeSession, currentUser } = useData();
   const [cursor, setCursor] = useState(new Date(2026, 8, 1));
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2026, 8, 2));
   const [selectedTutor, setSelectedTutor] = useState(tutors[0].id);
@@ -21,7 +21,7 @@ export function SchedulerPage() {
   const [mode, setMode] = useState<'online' | 'in-person'>('online');
   const [confirming, setConfirming] = useState(false);
 
-  const tutor = tutors.find((t) => t.id === selectedTutor)!;
+  const tutor = tutors.find((t) => t.id === selectedTutor) || tutors[0];
 
   const monthGrid = useMemo(() => {
     const year = cursor.getFullYear();
@@ -212,9 +212,22 @@ export function SchedulerPage() {
                 : 'bg-error-500/15 text-error-600 dark:text-error-400'
               }`}>{s.status}</span>
               {s.status === 'scheduled' && (
-                <button onClick={() => { cancelSession(s.id); notify('Session cancelled', 'info'); }} className="text-slate-400 hover:text-error-500">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => completeSession(s.id)}
+                    className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 transition-colors"
+                    title="Mark as completed and earn XP"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Mark Done
+                  </button>
+                  <button
+                    onClick={() => { cancelSession(s.id); notify('Session cancelled', 'info'); }}
+                    className="text-slate-400 hover:text-error-500 p-1"
+                    title="Cancel session"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               )}
             </div>
           ))}

@@ -1,13 +1,13 @@
-import { useState, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useRef, useMemo, type ChangeEvent, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import {
   User, Mail, Building, GraduationCap, FileText, Camera, Upload,
-  CheckCircle2, RotateCcw, Flame, Trophy, Award, Sparkles, RefreshCw,
+  CheckCircle2, RotateCcw, Sparkles, RefreshCw, BookOpen, CheckCircle,
   Hash, ShieldCheck
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { useData } from '@/context/DataContext';
-import { useToast } from '@/context/ToastContext';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useData } from '../context/DataContext';
+import { useToast } from '../context/ToastContext';
 
 const DEPARTMENTS = [
   'Computer Science & Engineering',
@@ -23,9 +23,15 @@ const DEPARTMENTS = [
 const PRESET_SEEDS = ['Aarav Sharma', 'Diya Patel', 'Alex Morgan', 'Jordan Lee', 'Sam Wilson', 'Taylor Swift'];
 
 export function ProfilePage() {
-  const { currentUser, updateCurrentUser } = useData();
+  const { currentUser, updateCurrentUser, sessions } = useData();
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const completedSessionsCount = useMemo(() => {
+    return sessions.filter(
+      (s) => s.status === 'completed' && (s.studentId === currentUser.id || s.tutorId === currentUser.id)
+    ).length;
+  }, [sessions, currentUser.id]);
 
   const [formData, setFormData] = useState({
     name: currentUser.name,
@@ -112,8 +118,8 @@ export function ProfilePage() {
         avatar: formData.avatar,
       };
 
-      updateCurrentUser(updatedUser);
-      showToast('Profile updated successfully! Saved to localStorage.', 'success');
+      updateCurrentUser(updatedUser, true);
+      showToast('Profile updated successfully! XP earned & saved to localStorage.', 'success');
     } catch {
       showToast('Failed to save profile changes.', 'error');
     } finally {
@@ -186,25 +192,25 @@ export function ProfilePage() {
               </div>
             </div>
 
-            {/* Quick Stats Badges */}
+            {/* Quick Academic Stats */}
             <div className="flex items-center gap-3 w-full md:w-auto justify-center md:justify-end">
               <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-warning-500/10 text-warning-500 flex items-center justify-center font-bold">
-                  <Flame className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+                  <CheckCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Streak</p>
-                  <p className="text-sm font-bold">{currentUser.streak} Days</p>
+                  <p className="text-xs text-slate-500">Sessions</p>
+                  <p className="text-sm font-bold">{completedSessionsCount} Completed</p>
                 </div>
               </div>
 
               <div className="glass px-4 py-2.5 rounded-2xl flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-primary-500/10 text-primary-500 flex items-center justify-center font-bold">
-                  <Trophy className="w-5 h-5" />
+                  <BookOpen className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500">Level {currentUser.level}</p>
-                  <p className="text-sm font-bold">{currentUser.xp.toLocaleString()} XP</p>
+                  <p className="text-xs text-slate-500">Subjects</p>
+                  <p className="text-sm font-bold">{(currentUser.skills || []).length} Tracked</p>
                 </div>
               </div>
             </div>
@@ -297,11 +303,11 @@ export function ProfilePage() {
               </div>
               <div className="flex justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
                 <span className="text-slate-500">Completed Sessions</span>
-                <span className="font-semibold">4 Sessions</span>
+                <span className="font-semibold">{completedSessionsCount} {completedSessionsCount === 1 ? 'Session' : 'Sessions'}</span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-slate-500">Badges Unlocked</span>
-                <span className="font-semibold text-primary-500">{currentUser.badges.length} Badges</span>
+                <span className="text-slate-500">Tracked Subjects</span>
+                <span className="font-semibold text-primary-500">{(currentUser.skills || []).length} Subjects</span>
               </div>
             </div>
           </GlassCard>
@@ -491,22 +497,28 @@ export function ProfilePage() {
             </form>
           </GlassCard>
 
-          {/* Academic Snapshot & Badges */}
+          {/* Academic Snapshot & Competencies */}
           <GlassCard className="p-6">
             <h2 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
-              <Award className="w-5 h-5 text-warning-500" /> Unlocked Badges & Achievements
+              <BookOpen className="w-5 h-5 text-primary-500" /> Academic Subject Competencies
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {currentUser.badges.map((badgeName, idx) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {(currentUser.skills || []).map((skill, idx) => (
                 <div
                   key={idx}
-                  className="p-3 rounded-2xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex flex-col items-center text-center gap-1.5"
+                  className="p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex flex-col gap-2"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-warning-500/20 to-primary-500/20 text-warning-500 flex items-center justify-center">
-                    <Award className="w-5 h-5" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">{skill.subject}</span>
+                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400">{skill.rating}%</span>
                   </div>
-                  <span className="text-xs font-semibold line-clamp-1">{badgeName}</span>
-                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">Earned</span>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
+                      style={{ width: `${skill.rating}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">{skill.category}</span>
                 </div>
               ))}
             </div>

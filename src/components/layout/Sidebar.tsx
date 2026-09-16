@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Users, Calendar, BarChart3, Trophy, Bot, Shield,
-  Sparkles, ChevronRight, GraduationCap, BookOpen, User, LogOut,
+  LayoutDashboard, Users, Calendar, BarChart3, Bot, Shield,
+  ChevronRight, GraduationCap, BookOpen, User, LogOut,
 } from 'lucide-react';
-import { useTheme } from '@/context/ThemeContext';
-import { useData } from '@/context/DataContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useData } from '../../context/DataContext';
+import { StudySyncLogo } from '../brand/StudySyncLogo';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,7 +14,6 @@ const nav = [
   { to: '/matching', label: 'Tutor Matching', icon: Users },
   { to: '/scheduler', label: 'Scheduler', icon: Calendar },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/gamification', label: 'Gamification', icon: Trophy },
   { to: '/assistant', label: 'AI Assistant', icon: Bot },
   { to: '/students', label: 'Students', icon: GraduationCap },
   { to: '/subjects', label: 'Subjects', icon: BookOpen },
@@ -34,11 +34,8 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
         }`}
       >
         <div className="glass-strong h-full flex flex-col p-5 border-r border-slate-200/60 dark:border-slate-700/60">
-          <Link to="/" className="flex items-center gap-2.5 mb-8 px-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-bold text-lg">StudySync<span className="text-gradient">AI</span></span>
+          <Link to="/" className="flex items-center mb-8 px-2 transition-transform hover:scale-[1.02]">
+            <StudySyncLogo variant="navbar" animated />
           </Link>
 
           <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
@@ -87,7 +84,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               <img src={currentUser?.avatar} alt={currentUser?.name} className="w-9 h-9 rounded-full bg-slate-200 object-cover ring-2 ring-primary-500/20 shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold truncate group-hover:text-primary-500 transition-colors">{currentUser?.name}</p>
-                <p className="text-[10px] text-slate-500 truncate">Level {currentUser?.level ?? 1} · {currentUser?.xp ?? 0} XP</p>
+                <p className="text-[10px] text-slate-500 truncate">{currentUser?.department || 'Student'}</p>
               </div>
             </Link>
 

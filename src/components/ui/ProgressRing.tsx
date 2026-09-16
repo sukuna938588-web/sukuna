@@ -1,49 +1,86 @@
-import { motion } from 'framer-motion';
+import React from 'react';
 
 interface ProgressRingProps {
-  value: number; // 0-100
+  value: number;
   size?: number;
   stroke?: number;
   label?: string;
   sublabel?: string;
   gradientId?: string;
+  className?: string;
+  color?: string;
 }
 
 export function ProgressRing({
-  value, size = 120, stroke = 10, label, sublabel, gradientId = 'ringGrad',
+  value,
+  size = 80,
+  stroke = 8,
+  label,
+  sublabel,
+  gradientId,
+  className = '',
+  color,
 }: ProgressRingProps) {
+  const normalizedValue = Math.min(100, Math.max(0, value));
   const radius = (size - stroke) / 2;
-  const circ = 2 * Math.PI * radius;
-  const offset = circ - (value / 100) * circ;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (normalizedValue / 100) * circumference;
+  const uniqueId = gradientId || `progress-grad-${size}-${stroke}`;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+    <div
+      className={`relative inline-flex items-center justify-center ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        className="transform -rotate-90"
+      >
         <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={uniqueId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#3366ff" />
             <stop offset="100%" stopColor="#06b6d4" />
           </linearGradient>
         </defs>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-slate-200 dark:text-slate-700" />
-        <motion.circle
+        {/* Background Track */}
+        <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="none"
-          stroke={`url(#${gradientId})`}
+          stroke="currentColor"
           strokeWidth={stroke}
+          fill="transparent"
+          className="text-slate-200/80 dark:text-slate-700/60"
+        />
+        {/* Animated Progress Indicator */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={color || `url(#${uniqueId})`}
+          strokeWidth={stroke}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          strokeDasharray={circ}
-          initial={{ strokeDashoffset: circ }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: 'easeOut' }}
+          fill="transparent"
+          style={{ transition: 'stroke-dashoffset 0.8s ease-in-out' }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold font-display">{label ?? `${value}%`}</span>
-        {sublabel && <span className="text-xs text-slate-500 dark:text-slate-400">{sublabel}</span>}
-      </div>
+      {(label || sublabel) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-1">
+          {label && (
+            <span className="font-display font-bold text-sm leading-none text-slate-900 dark:text-slate-100">
+              {label}
+            </span>
+          )}
+          {sublabel && (
+            <span className="text-[9px] text-slate-400 font-medium leading-tight mt-0.5 max-w-[80%] truncate">
+              {sublabel}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

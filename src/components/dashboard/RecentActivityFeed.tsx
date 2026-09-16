@@ -12,10 +12,11 @@ import {
   Sparkles,
   Layers,
   ArrowRight,
+  XCircle,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { useData } from '@/context/DataContext';
-import type { ActivityItem, ActivityType } from '@/types';
+import { GlassCard } from '../ui/GlassCard';
+import { useData } from '../../context/DataContext';
+import type { ActivityItem, ActivityType } from '../../types';
 import { Link } from 'react-router-dom';
 
 function formatRelativeTime(isoString: string): string {
@@ -85,6 +86,14 @@ const TYPE_CONFIG: Record<
     textColor: 'text-purple-600 dark:text-purple-400',
     badgeBg: 'bg-purple-500/15 text-purple-600 dark:text-purple-300',
     borderColor: 'border-purple-500/20 hover:border-purple-500/40',
+  },
+  session_cancelled: {
+    label: 'Session Cancelled',
+    icon: XCircle,
+    bgColor: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+    textColor: 'text-rose-600 dark:text-rose-400',
+    badgeBg: 'bg-rose-500/15 text-rose-600 dark:text-rose-300',
+    borderColor: 'border-rose-500/20 hover:border-rose-500/40',
   },
 };
 

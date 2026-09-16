@@ -9,8 +9,8 @@ import type {
   AIDashboardScores,
   WeakSubjectInsight,
   ImprovementPhase,
-} from '@/types';
-import { getMatchTier, getStudentStrongSubjects, getStudentWeakSubjects } from '@/lib/matching';
+} from '../types';
+import { getMatchTier, getStudentWeakSubjects } from './matching';
 
 /**
  * Normalizes strings for robust fuzzy comparison
@@ -74,7 +74,7 @@ export function calculateSmartAITutorRecommendations(
 
       // 2. Skill Gap & Student Proficiency Synergy
       let skillGapScore = 0.65;
-      const relevantSkills = currentUser.skills.filter((sk) =>
+      const relevantSkills = (currentUser.skills || []).filter((sk) =>
         matchedWeakSubjects.some((m) => normalize(m) === normalize(sk.subject))
       );
       if (relevantSkills.length > 0) {
@@ -354,7 +354,7 @@ export function calculateAILearningInsights(
       actionItems: [
         'Complete 2 full-length timed comprehensive mock assessments',
         'Achieve >85% benchmark accuracy on all practice modules',
-        'Earn the Subject Master Badge & mentor incoming junior learners',
+        'Demonstrate subject mastery & mentor incoming junior learners',
       ],
       expectedGain: '85%+ Target Mastery',
     },
@@ -375,12 +375,11 @@ export function calculateAILearningInsights(
   const completedSessionsCount = sessions.filter(
     (s) => s.status === 'completed' && (s.studentId === currentUser.id || s.tutorId === currentUser.id)
   ).length;
-  const streak = currentUser.streak || 1;
 
   let velocity = 3.5;
-  if (streak >= 7 && completedSessionsCount >= 3) velocity = 5.8;
-  else if (streak >= 3 || completedSessionsCount >= 1) velocity = 4.2;
-  else velocity = 2.4;
+  if (completedSessionsCount >= 5) velocity = 5.8;
+  else if (completedSessionsCount >= 2) velocity = 4.2;
+  else velocity = 2.8;
 
   const avgCurrentRating =
     userSkills.length > 0
@@ -502,7 +501,6 @@ export function generateAIStudyPlan(
     }
 
     const duration = intensity === 'accelerated' ? 90 : intensity === 'light' ? 45 : 60;
-    const xpReward = Math.round(duration * 1.5);
 
     // Compute mock date matching this week
     const now = new Date();
@@ -527,7 +525,6 @@ export function generateAIStudyPlan(
       durationMinutes: duration,
       technique: techniques[index % techniques.length],
       focusType,
-      xpReward,
       color: colors[index % colors.length],
       isBooked: hasSession,
     };
@@ -548,7 +545,15 @@ export function calculateAIPerformancePrediction(
   const velocity = insights.learningTrend.weeklyVelocity;
 
   // Subject predictions
-  const subjectPredictions = currentUser.skills.map((sk) => {
+  const userSkillsList = currentUser.skills && currentUser.skills.length > 0
+    ? currentUser.skills
+    : [
+        { subject: 'Data Structures', rating: 70 },
+        { subject: 'Algorithms', rating: 65 },
+        { subject: 'Web Development', rating: 75 },
+      ];
+
+  const subjectPredictions = userSkillsList.map((sk) => {
     const isWeak = insights.weakestSubjects.some(
       (w) => normalize(w.subject) === normalize(sk.subject) && w.priority === 'High'
     );
@@ -570,7 +575,7 @@ export function calculateAIPerformancePrediction(
 
   // 8-Week Growth Trajectory Data for Gradient Chart
   const baseAvg =
-    currentUser.skills.reduce((a, b) => a + b.rating, 0) / Math.max(currentUser.skills.length, 1);
+    userSkillsList.reduce((a, b) => a + b.rating, 0) / Math.max(userSkillsList.length, 1);
 
   const growthTrajectory = [
     { week: 'W0 (Now)', projected: Math.round(baseAvg), baseline: Math.round(baseAvg), target: 85 },
@@ -686,7 +691,6 @@ export function calculateAIDashboardScores(
   sessions: Session[]
 ): AIDashboardScores {
   const userSkills = currentUser.skills || [];
-  const streak = currentUser.streak || 1;
   const completedSessions = sessions.filter(
     (s) => s.status === 'completed' && (s.studentId === currentUser.id || s.tutorId === currentUser.id)
   ).length;
@@ -695,18 +699,18 @@ export function calculateAIDashboardScores(
   ).length;
 
   // 1. Learning Health Score (0-100)
-  // Combines skill balance, streak strength, and low-rating remediation
+  // Combines skill balance, low-rating remediation, and session engagement
   const avgSkill =
     userSkills.length > 0
       ? userSkills.reduce((a, b) => a + b.rating, 0) / userSkills.length
       : 70;
   const minSkill =
     userSkills.length > 0 ? Math.min(...userSkills.map((s) => s.rating)) : 60;
-  const streakFactor = Math.min(100, streak * 8);
+  const engagementFactor = Math.min(100, (completedSessions + scheduledSessions) * 12 + 40);
 
   const healthScore = Math.min(
     99,
-    Math.max(45, Math.round(avgSkill * 0.45 + minSkill * 0.25 + streakFactor * 0.20 + (completedSessions * 2.5)))
+    Math.max(45, Math.round(avgSkill * 0.5 + minSkill * 0.3 + engagementFactor * 0.2))
   );
 
   let healthRating: AIDashboardScores['healthRating'] = 'Good';
@@ -716,19 +720,18 @@ export function calculateAIDashboardScores(
   else healthRating = 'Needs Attention';
 
   // 2. Productivity Score (0-100)
-  // Evaluates study momentum, session completion, and XP acquisition
-  const xpVelocity = Math.min(100, Math.round((currentUser.xp || 500) / 30));
-  const sessionProductivity = Math.min(100, completedSessions * 18 + scheduledSessions * 8 + 45);
+  // Evaluates study momentum and session completion
+  const sessionProductivity = Math.min(100, completedSessions * 20 + scheduledSessions * 10 + 40);
   const productivityScore = Math.min(
     99,
-    Math.max(50, Math.round(sessionProductivity * 0.6 + xpVelocity * 0.4))
+    Math.max(50, Math.round(sessionProductivity))
   );
 
   // 3. Study Consistency Score (0-100)
-  // Evaluates daily streak adherence and regular schedule cadence
+  // Evaluates regular scheduled study cadence
   const consistencyScore = Math.min(
     99,
-    Math.max(40, Math.round(Math.min(100, streak * 10 + 35) * 0.7 + (scheduledSessions > 0 ? 25 : 10)))
+    Math.max(40, Math.round(Math.min(100, (completedSessions * 15) + (scheduledSessions * 10) + 45)))
   );
 
   return {

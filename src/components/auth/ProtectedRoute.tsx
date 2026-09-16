@@ -1,5 +1,5 @@
 import { Navigate, useLocation, Outlet } from 'react-router-dom';
-import { useData } from '@/context/DataContext';
+import { useData } from '../../context/DataContext';
 
 export function ProtectedRoute({ children }: { children?: React.ReactNode }) {
   const { isAuthenticated, currentUser } = useData();

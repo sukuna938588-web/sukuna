@@ -1,6 +1,6 @@
 import type {
-  Student, Tutor, Session, Notification, Badge, LeaderboardEntry, Review, Subject, ActivityItem,
-} from '@/types';
+  Student, Tutor, Session, Notification, Review, Subject, ActivityItem,
+} from '../types';
 
 const avatar = (seed: string) =>
   `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}&backgroundType=gradientLinear&backgroundColor=3366ff,06b6d4`;
@@ -32,25 +32,21 @@ export const currentUser: Student = {
     { day: 'Thu', start: '15:00', end: '18:00' },
     { day: 'Fri', start: '14:00', end: '17:00' },
   ],
-  xp: 4820,
-  level: 12,
-  streak: 14,
-  badges: ['First Session', 'Week Warrior', 'Quick Learner', 'Team Player'],
   bio: 'CS junior passionate about full-stack development. Looking to strengthen my fundamentals in ML and systems.',
 };
 
 // Sample subjects for demonstration
 export const sampleSubjects: Subject[] = [
-  { id: 'sub-001', name: 'Data Structures', code: 'CS201', difficulty: 'Beginner' },
-  { id: 'sub-002', name: 'Algorithms', code: 'CS202', difficulty: 'Intermediate' },
-  { id: 'sub-003', name: 'Operating Systems', code: 'CS301', difficulty: 'Intermediate' },
-  { id: 'sub-004', name: 'Databases', code: 'CS302', difficulty: 'Intermediate' },
-  { id: 'sub-005', name: 'Machine Learning', code: 'CS401', difficulty: 'Advanced' },
-  { id: 'sub-006', name: 'Web Development', code: 'CS205', difficulty: 'Beginner' },
-  { id: 'sub-007', name: 'Computer Networks', code: 'CS303', difficulty: 'Intermediate' },
-  { id: 'sub-008', name: 'Discrete Math', code: 'MA201', difficulty: 'Intermediate' },
-  { id: 'sub-009', name: 'Java Programming', code: 'CS102', difficulty: 'Beginner' },
-  { id: 'sub-010', name: 'Python Programming', code: 'CS103', difficulty: 'Beginner' },
+  { id: 'sub-001', name: 'Data Structures', code: 'CS201', department: 'Computer Science', credits: 4, difficulty: 'Beginner', description: 'Core principles of arrays, linked lists, binary trees, heaps, and runtime complexity analysis.' },
+  { id: 'sub-002', name: 'Algorithms', code: 'CS202', department: 'Computer Science', credits: 4, difficulty: 'Intermediate', description: 'Design paradigms including divide-and-conquer, dynamic programming, and greedy graph algorithms.' },
+  { id: 'sub-003', name: 'Operating Systems', code: 'CS301', department: 'Computer Science', credits: 4, difficulty: 'Intermediate', description: 'Process concurrency, virtual memory management, file systems, and kernel architecture.' },
+  { id: 'sub-004', name: 'Databases', code: 'CS302', department: 'Data Science', credits: 3, difficulty: 'Intermediate', description: 'Relational algebra, SQL query optimization, indexing strategies, and ACID transaction semantics.' },
+  { id: 'sub-005', name: 'Machine Learning', code: 'CS401', department: 'Data Science', credits: 4, difficulty: 'Advanced', description: 'Supervised and unsupervised models, neural networks, gradient descent, and statistical evaluation.' },
+  { id: 'sub-006', name: 'Web Development', code: 'CS205', department: 'Software Engineering', credits: 3, difficulty: 'Beginner', description: 'Modern responsive frontend architectures, RESTful APIs, state management, and cloud deployments.' },
+  { id: 'sub-007', name: 'Computer Networks', code: 'CS303', department: 'Electrical Engineering', credits: 3, difficulty: 'Intermediate', description: 'OSI protocol stack, TCP/IP congestion control, packet routing, DNS, and modern network security.' },
+  { id: 'sub-008', name: 'Discrete Math', code: 'MA201', department: 'Mathematics', credits: 4, difficulty: 'Intermediate', description: 'Set theory, combinatorics, proof techniques, propositional logic, and graph theory.' },
+  { id: 'sub-009', name: 'Java Programming', code: 'CS102', department: 'Computer Science', credits: 3, difficulty: 'Beginner', description: 'Object-oriented programming, design patterns, polymorphism, and Java Virtual Machine execution.' },
+  { id: 'sub-010', name: 'Python Programming', code: 'CS103', department: 'Data Science', credits: 3, difficulty: 'Beginner', description: 'Idiomatic scripting, scientific computing with NumPy/Pandas, and modular software packaging.' },
 ];
 
 // Sample students for demonstration
@@ -79,10 +75,6 @@ export const sampleStudents: Student[] = sampleStudentData.map((d, i) => ({
   weakSubjects: d.weak,
   learningPreferences: ['Visual learning', 'Hands-on projects'],
   availability: [],
-  xp: 1000 + i * 350,
-  level: 5 + (i % 8),
-  streak: i % 20,
-  badges: ['First Session', 'Week Warrior'].slice(0, (i % 3) + 1),
   bio: 'Student passionate about learning and growth.',
 }));
 
@@ -190,33 +182,10 @@ export const sessions: Session[] = [
 export const notifications: Notification[] = [
   { id: 'n1', type: 'reminder', title: 'Session in 2 hours', message: 'Machine Learning with Dr. Priya Nair starts at 16:00.', time: '1h ago', read: false },
   { id: 'n2', type: 'booking', title: 'Booking confirmed', message: 'Your OS session on Sep 4 is confirmed.', time: '3h ago', read: false },
-  { id: 'n3', type: 'achievement', title: 'Badge earned!', message: 'You unlocked the "Week Warrior" badge.', time: '1d ago', read: false },
+  { id: 'n3', type: 'system', title: 'Study plan updated', message: 'Your weekly study roadmap has been refreshed.', time: '1d ago', read: false },
   { id: 'n4', type: 'system', title: 'New tutor available', message: 'Dr. Sara Khan joined for Machine Learning.', time: '2d ago', read: true },
-  { id: 'n5', type: 'reminder', title: 'Streak milestone', message: 'You hit a 14-day learning streak!', time: '3d ago', read: true },
+  { id: 'n5', type: 'reminder', title: 'Upcoming Review', message: 'Time to review your Data Structures practice problems.', time: '3d ago', read: true },
 ];
-
-export const badges: Badge[] = [
-  { id: 'b1', name: 'First Session', description: 'Completed your first tutoring session', icon: 'Sparkles', tier: 'bronze' },
-  { id: 'b2', name: 'Week Warrior', description: 'Maintained a 7-day learning streak', icon: 'Flame', tier: 'silver' },
-  { id: 'b3', name: 'Quick Learner', description: 'Completed 5 sessions in one week', icon: 'Zap', tier: 'silver' },
-  { id: 'b4', name: 'Team Player', description: 'Joined a group study session', icon: 'Users', tier: 'bronze' },
-  { id: 'b5', name: 'Subject Master', description: 'Reached 90% mastery in a subject', icon: 'Trophy', tier: 'gold' },
-  { id: 'b6', name: 'Night Owl', description: 'Studied past midnight 5 times', icon: 'Moon', tier: 'silver' },
-  { id: 'b7', name: 'Top Performer', description: 'Reached top 10 on the leaderboard', icon: 'Crown', tier: 'platinum' },
-  { id: 'b8', name: 'Mentor', description: 'Helped 3 peers in group sessions', icon: 'GraduationCap', tier: 'gold' },
-];
-
-export const leaderboard: LeaderboardEntry[] = [
-  { name: 'Aarav Sharma', avatar: avatar('Aarav Sharma'), xp: 4820, level: 12, streak: 14, department: 'CS' },
-  { name: 'Diya Patel', avatar: avatar('Diya Patel'), xp: 4200, level: 10, streak: 8, department: 'CS' },
-  { name: 'Yash Kumar', avatar: avatar('Yash Kumar'), xp: 3900, level: 9, streak: 12, department: 'CS' },
-  { name: 'Riya Nair', avatar: avatar('Riya Nair'), xp: 3500, level: 8, streak: 5, department: 'CS' },
-  { name: 'Sai Krishna', avatar: avatar('Sai Krishna'), xp: 3200, level: 8, streak: 20, department: 'CS' },
-  { name: 'Ananya Rao', avatar: avatar('Ananya Rao'), xp: 2800, level: 7, streak: 3, department: 'CS' },
-  { name: 'Karan Joshi', avatar: avatar('Karan Joshi'), xp: 2500, level: 6, streak: 15, department: 'CS' },
-  { name: 'Nisha Reddy', avatar: avatar('Nisha Reddy'), xp: 2200, level: 6, streak: 7, department: 'CS' },
-  { name: 'Aditya Menon', avatar: avatar('Aditya Menon'), xp: 1900, level: 5, streak: 2, department: 'CS' },
-].sort((a, b) => b.xp - a.xp).map((e, i) => ({ ...e, rank: i + 1 }));
 
 // Analytics series
 export const weeklyPerformance = [

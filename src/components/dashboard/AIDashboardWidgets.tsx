@@ -7,7 +7,6 @@ import {
   HeartPulse,
   Zap,
   Activity,
-  Flame,
   Clock,
   ArrowRight,
   TrendingUp,
@@ -16,20 +15,20 @@ import {
   ChevronRight,
   Target,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Counter } from '@/components/ui/Counter';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { useData } from '@/context/DataContext';
-import { tutors } from '@/data/mockData';
+import { GlassCard } from '../ui/GlassCard';
+import { Counter } from '../ui/Counter';
+import { ProgressRing } from '../ui/ProgressRing';
+import { useData } from '../../context/DataContext';
+import { tutors } from '../../data/mockData';
 import {
   calculateAIDashboardScores,
   calculateAILearningInsights,
   calculateSmartAITutorRecommendations,
   generateAIStudyPlan,
-} from '@/lib/aiEngine';
-import { AIStudyPlannerModal } from '@/components/ai/AIStudyPlannerModal';
-import { AITutorDetailModal } from '@/components/ai/AITutorDetailModal';
-import type { AITutorRecommendation } from '@/types';
+} from '../../lib/aiEngine';
+import { AIStudyPlannerModal } from '../ai/AIStudyPlannerModal';
+import { AITutorDetailModal } from '../ai/AITutorDetailModal';
+import type { AITutorRecommendation } from '../../types';
 
 export function AIDashboardWidgets() {
   const { currentUser, sessions } = useData();
@@ -58,10 +57,6 @@ export function AIDashboardWidgets() {
     [currentUser, sessions]
   );
 
-  const predictions = useMemo(
-    () => calculateAIPerformancePrediction(currentUser, sessions),
-    [currentUser, sessions]
-  );
 
   const top3Tutors = tutorRecs.slice(0, 3);
   const topWeakSubject = aiInsights.weakestSubjects[0];
@@ -135,7 +130,7 @@ export function AIDashboardWidgets() {
                 />
               </div>
               <p className="text-[11px] text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                Composite of subject mastery balance, streak resilience & session coverage.
+                Composite of subject mastery balance, review cadence & session coverage.
               </p>
             </GlassCard>
           </motion.div>
@@ -179,7 +174,7 @@ export function AIDashboardWidgets() {
                 />
               </div>
               <p className="text-[11px] text-slate-400 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
-                Calculated from weekly XP acquisition, practice sessions & problem throughput.
+                Calculated from weekly study goals, practice sessions & problem throughput.
               </p>
             </GlassCard>
           </motion.div>
@@ -207,7 +202,7 @@ export function AIDashboardWidgets() {
                       <Counter value={aiScores.consistencyScore} duration={1.2} />
                     </span>
                     <span className="text-xs font-semibold text-purple-500 flex items-center gap-0.5">
-                      <Flame className="w-3 h-3" /> {currentUser.streak}d streak
+                      <Clock className="w-3 h-3" /> Consistent
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 pt-1">
@@ -375,7 +370,7 @@ export function AIDashboardWidgets() {
                 >
                   <div className="flex items-center justify-between text-[11px] font-bold mb-1">
                     <span className="font-mono">{block.day}</span>
-                    <span className="text-[9px] text-warning-500">+{block.xpReward} XP</span>
+                    <span className="text-[9px] text-primary-500 font-medium">{block.durationMinutes}m</span>
                   </div>
                   <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
                     {block.subject}

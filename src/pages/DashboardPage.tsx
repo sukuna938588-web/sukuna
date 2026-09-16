@@ -4,9 +4,6 @@ import { Link } from 'react-router-dom';
 import {
   Calendar,
   TrendingUp,
-  Flame,
-  Zap,
-  Trophy,
   ArrowRight,
   BookOpen,
   Target,
@@ -18,18 +15,19 @@ import {
   CheckCircle2,
   Brain,
   Sparkles,
+  Zap,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Counter } from '@/components/ui/Counter';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { RecentActivityFeed } from '@/components/dashboard/RecentActivityFeed';
-import { AIDashboardWidgets } from '@/components/dashboard/AIDashboardWidgets';
-import { useData } from '@/context/DataContext';
-import { tutors, weeklyPerformance } from '@/data/mockData';
-import { findPeerMatches } from '@/lib/matching';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Counter } from '../components/ui/Counter';
+import { ProgressRing } from '../components/ui/ProgressRing';
+import { RecentActivityFeed } from '../components/dashboard/RecentActivityFeed';
+import { AIDashboardWidgets } from '../components/dashboard/AIDashboardWidgets';
+import { useData } from '../context/DataContext';
+import { tutors, weeklyPerformance } from '../data/mockData';
+import { findPeerMatches } from '../lib/matching';
 
 export function DashboardPage() {
-  const { students, subjects, sessions, notifications, xp, currentUser } = useData();
+  const { students, subjects, sessions, notifications, currentUser, completeSession } = useData();
 
   // Dynamic calculations derived automatically from stored data
   const totalStudents = students.length;
@@ -53,7 +51,11 @@ export function DashboardPage() {
   const avgWeeklyScore = Math.round(
     weeklyPerformance.reduce((a, w) => a + w.score, 0) / weeklyPerformance.length
   );
-  const levelProgress = ((xp % 500) / 500) * 100;
+  const userSkills = useMemo(() => currentUser?.skills || [], [currentUser?.skills]);
+  const avgSkillProficiency = useMemo(() => {
+    if (userSkills.length === 0) return 75;
+    return Math.round(userSkills.reduce((acc, s) => acc + s.rating, 0) / userSkills.length);
+  }, [userSkills]);
 
   // 6 Premium Metric Cards Configuration
   const metricCards = [
@@ -171,23 +173,23 @@ export function DashboardPage() {
             <div className="flex items-center gap-6">
               <div className="text-center">
                 <ProgressRing
-                  value={Math.round(levelProgress)}
+                  value={avgSkillProficiency}
                   size={90}
                   stroke={8}
-                  label={`${Math.round(levelProgress)}%`}
-                  sublabel="to next level"
+                  label={`${avgSkillProficiency}%`}
+                  sublabel="Skill Mastery"
                 />
               </div>
               <div>
-                <div className="flex items-center gap-2 text-warning-500">
-                  <Trophy className="w-5 h-5" />
-                  <span className="font-display font-bold text-xl">Level {currentUser.level}</span>
+                <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
+                  <BookOpen className="w-5 h-5" />
+                  <span className="font-display font-bold text-xl">{userSkills.length} Tracked Subjects</span>
                 </div>
                 <p className="text-2xl font-bold font-display text-gradient">
-                  {xp.toLocaleString()} XP
+                  {sessionsCompleted} {sessionsCompleted === 1 ? 'Session' : 'Sessions'} Completed
                 </p>
                 <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                  <Flame className="w-3.5 h-3.5 text-warning-500 animate-pulse" /> {currentUser.streak}-day learning streak
+                  <Calendar className="w-3.5 h-3.5 text-primary-500" /> {sessionsScheduled} scheduled upcoming
                 </p>
               </div>
             </div>
@@ -378,15 +380,24 @@ export function DashboardPage() {
                         with {s.tutorName} · {s.startTime}–{s.endTime}
                       </p>
                     </div>
-                    <span
-                      className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${
-                        s.mode === 'online'
-                          ? 'bg-accent-500/15 text-accent-600 dark:text-accent-400'
-                          : 'bg-primary-500/15 text-primary-600 dark:text-primary-400'
-                      }`}
-                    >
-                      {s.mode}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full capitalize ${
+                          s.mode === 'online'
+                            ? 'bg-accent-500/15 text-accent-600 dark:text-accent-400'
+                            : 'bg-primary-500/15 text-primary-600 dark:text-primary-400'
+                        }`}
+                      >
+                        {s.mode}
+                      </span>
+                      <button
+                        onClick={() => completeSession(s.id)}
+                        className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-semibold flex items-center gap-1 transition-colors"
+                        title="Mark session as completed (+100 XP)"
+                      >
+                        <CheckCircle2 className="w-3 h-3" /> Done
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -483,7 +494,7 @@ export function DashboardPage() {
               </Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {currentUser.skills.map((s) => (
+              {userSkills.map((s) => (
                 <div
                   key={s.subject}
                   className="p-3 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50"

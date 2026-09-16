@@ -8,10 +8,10 @@ import {
   Users, Calendar, TrendingUp, Search,
   Star, MoreHorizontal, Shield, Activity, BookOpen,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { useTheme } from '@/context/ThemeContext';
-import { useData } from '@/context/DataContext';
-import { tutors, adminStats, liveActivity } from '@/data/mockData';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useTheme } from '../context/ThemeContext';
+import { useData } from '../context/DataContext';
+import { tutors, adminStats, liveActivity } from '../data/mockData';
 
 const PIE_COLORS = ['#3366ff', '#06b6d4', '#10b981', '#f59e0b'];
 
@@ -176,8 +176,8 @@ export function AdminPage() {
                     <th className="py-3 px-2">Student</th>
                     <th className="py-3 px-2">Department</th>
                     <th className="py-3 px-2">Year</th>
-                    <th className="py-3 px-2">Level</th>
-                    <th className="py-3 px-2">XP</th>
+                    <th className="py-3 px-2">Key Strength</th>
+                    <th className="py-3 px-2">Target Subject</th>
                     <th className="py-3 px-2"></th>
                   </tr>
                 </thead>
@@ -192,8 +192,12 @@ export function AdminPage() {
                       </td>
                       <td className="py-3 px-2 text-slate-500">{s.department}</td>
                       <td className="py-3 px-2 text-slate-500">{s.year}</td>
-                      <td className="py-3 px-2"><span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300">Lvl {s.level}</span></td>
-                      <td className="py-3 px-2 font-semibold">{s.xp.toLocaleString()}</td>
+                      <td className="py-3 px-2">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300">
+                          {s.strengths?.[0] || 'General'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-slate-500 text-xs">{s.weaknesses?.[0] || 'General Studies'}</td>
                       <td className="py-3 px-2"><MoreHorizontal className="w-4 h-4 text-slate-400" /></td>
                     </tr>
                   ))}

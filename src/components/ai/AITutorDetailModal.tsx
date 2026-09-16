@@ -12,10 +12,10 @@ import {
   Brain,
   ArrowRight,
 } from 'lucide-react';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { useData } from '@/context/DataContext';
-import { useToast } from '@/context/ToastContext';
-import type { AITutorRecommendation } from '@/types';
+import { ProgressRing } from '../ui/ProgressRing';
+import { useData } from '../../context/DataContext';
+import { useToast } from '../../context/ToastContext';
+import type { AITutorRecommendation } from '../../types';
 
 interface AITutorDetailModalProps {
   recommendation: AITutorRecommendation | null;
@@ -28,7 +28,7 @@ export function AITutorDetailModal({
   isOpen,
   onClose,
 }: AITutorDetailModalProps) {
-  const { currentUser, addSession, logActivity } = useData();
+  const { currentUser, addSession, logActivity, recordMatchAccepted } = useData();
   const { notify } = useToast();
 
   const [bookingSubject, setBookingSubject] = useState('');
@@ -77,6 +77,7 @@ export function AITutorDetailModal({
 
     setTimeout(() => {
       addSession(newSession);
+      recordMatchAccepted(tutor.name, defaultSubject);
       logActivity({
         type: 'session_booked',
         title: 'Tutor Session Booked',
@@ -87,8 +88,8 @@ export function AITutorDetailModal({
       });
 
       notify({
-        title: 'Session Successfully Booked!',
-        message: `Your session with ${tutor.name} on ${bookingDate} at ${bookingTime} is confirmed.`,
+        title: 'Tutor Match Accepted & Session Booked!',
+        message: `Your session with ${tutor.name} on ${bookingDate} at ${bookingTime} is confirmed (+75 XP)!`,
         type: 'success',
       });
 
@@ -131,7 +132,7 @@ export function AITutorDetailModal({
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-0.5">
-                <Building className="w-3.5 h-3.5 text-primary-500" /> {tutor.department} · {tutor.title}
+                <Building className="w-3.5 h-3.5 text-primary-500" /> {tutor.department} · {tutor.title || 'Peer Tutor'}
               </p>
             </div>
           </div>

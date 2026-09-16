@@ -1,9 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
-  LineChart,
+  ComposedChart,
   Line,
-  AreaChart,
   Area,
   BarChart,
   Bar,
@@ -17,13 +16,10 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
 } from 'recharts';
 import {
   TrendingUp,
-  Flame,
   Target,
-  Award,
   Calendar,
   Brain,
   Sparkles,
@@ -36,20 +32,17 @@ import {
   HeartPulse,
   Activity,
   Layers,
-  ChevronRight,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { Counter } from '@/components/ui/Counter';
-import { useData } from '@/context/DataContext';
-import { useTheme } from '@/context/ThemeContext';
-import { weeklyPerformance } from '@/data/mockData';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useData } from '../context/DataContext';
+import { useTheme } from '../context/ThemeContext';
+import { weeklyPerformance } from '../data/mockData';
 import {
   calculateAILearningInsights,
   calculateAIPerformancePrediction,
   calculateAIDashboardScores,
-} from '@/lib/aiEngine';
-import { AIStudyPlannerModal } from '@/components/ai/AIStudyPlannerModal';
+} from '../lib/aiEngine';
+import { AIStudyPlannerModal } from '../components/ai/AIStudyPlannerModal';
 
 export function AnalyticsPage() {
   const { theme } = useTheme();
@@ -84,21 +77,13 @@ export function AnalyticsPage() {
 
   // Radar data
   const radarData = useMemo(() => {
-    return currentUser.skills.map((s) => ({
+    return (currentUser?.skills || []).map((s) => ({
       subject: s.subject.split(' ')[0],
       value: s.rating,
     }));
-  }, [currentUser.skills]);
+  }, [currentUser?.skills]);
 
-  const avgMastery = Math.round(
-    currentUser.skills.reduce((a, s) => a + s.rating, 0) / Math.max(1, currentUser.skills.length)
-  );
 
-  const bestSubject =
-    [...currentUser.skills].sort((a, b) => b.rating - a.rating)[0] || {
-      subject: 'None',
-      rating: 0,
-    };
 
   return (
     <div className="space-y-8 pb-16">
@@ -149,14 +134,14 @@ export function AnalyticsPage() {
             icon: Activity,
             label: 'Consistency Score',
             value: `${aiScores.consistencyScore}%`,
-            sub: `${currentUser.streak}-day active streak`,
+            sub: 'Regular weekly pacing',
             color: 'text-purple-500',
             bg: 'bg-purple-500/10',
           },
           {
             icon: TrendingUp,
             label: 'Predicted Growth',
-            value: `+${aiPredictions.overallImprovementEstimate}%`,
+            value: `+${aiPredictions.overallGrowthIndex}%`,
             sub: 'Over next 8 weeks',
             color: 'text-primary-500',
             bg: 'bg-primary-500/10',
@@ -212,7 +197,7 @@ export function AnalyticsPage() {
             <div className="flex items-center gap-4 text-xs font-medium">
               <div className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-primary-500" />
-                <span>With AI StudySync (+{aiPredictions.overallImprovementEstimate}%)</span>
+                <span>With AI StudySync (+{aiPredictions.overallGrowthIndex}%)</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-400">
                 <span className="w-3 h-3 rounded-full bg-slate-400" />
@@ -222,7 +207,7 @@ export function AnalyticsPage() {
           </div>
 
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={aiPredictions.growthTimeline}>
+            <ComposedChart data={aiPredictions.growthTrajectory}>
               <defs>
                 <linearGradient id="predictedGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#3366ff" stopOpacity={0.45} />
@@ -238,7 +223,7 @@ export function AnalyticsPage() {
               <YAxis stroke={axisColor} fontSize={12} domain={[40, 100]} unit="%" />
               <Tooltip
                 contentStyle={tooltipStyle}
-                formatter={(value: any) => [`${value}% Mastery`, '']}
+                formatter={(value: unknown) => [`${value}% Mastery`, '']}
               />
               <Area
                 type="monotone"
@@ -266,7 +251,7 @@ export function AnalyticsPage() {
                 strokeDasharray="3 3"
                 dot={false}
               />
-            </AreaChart>
+            </ComposedChart>
           </ResponsiveContainer>
 
           <div className="mt-4 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
@@ -295,7 +280,7 @@ export function AnalyticsPage() {
               </div>
 
               <div className="space-y-3">
-                {aiPredictions.subjectForecasts.map((sub, i) => (
+                {aiPredictions.subjectPredictions.map((sub, i) => (
                   <div
                     key={i}
                     className="p-3.5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60"
@@ -305,7 +290,7 @@ export function AnalyticsPage() {
                         {sub.subject}
                       </span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                        +{sub.expectedImprovementPct}% projected
+                        +{sub.improvementPct}% projected
                       </span>
                     </div>
 
@@ -315,11 +300,11 @@ export function AnalyticsPage() {
                       </span>
                       <span>→</span>
                       <span>
-                        In 4w: <strong className="text-primary-500">{sub.projectedMasteryIn4Weeks}%</strong>
+                        In 4w: <strong className="text-primary-500">{sub.projected4Weeks}%</strong>
                       </span>
                       <span>→</span>
                       <span>
-                        In 8w: <strong className="text-emerald-500">{sub.projectedMasteryIn8Weeks}%</strong>
+                        In 8w: <strong className="text-emerald-500">{sub.projected8Weeks}%</strong>
                       </span>
                     </div>
 
@@ -331,8 +316,8 @@ export function AnalyticsPage() {
                       />
                       <div
                         className="h-full bg-primary-500"
-                        style={{ width: `${sub.projectedMasteryIn8Weeks - sub.currentMastery}%` }}
-                        title={`Growth: +${sub.expectedImprovementPct}%`}
+                        style={{ width: `${sub.projected8Weeks - sub.currentMastery}%` }}
+                        title={`Growth: +${sub.improvementPct}%`}
                       />
                     </div>
                   </div>
@@ -362,8 +347,8 @@ export function AnalyticsPage() {
 
               <div className="space-y-3">
                 {aiPredictions.riskAreas.map((risk, idx) => {
-                  const isHigh = risk.severity === 'high';
-                  const isMed = risk.severity === 'medium';
+                  const isHigh = risk.riskLevel === 'High';
+                  const isMed = risk.riskLevel === 'Medium';
 
                   return (
                     <div
@@ -389,13 +374,13 @@ export function AnalyticsPage() {
                               : 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30'
                           }`}
                         >
-                          {risk.severity} Risk
+                          {risk.riskLevel} Risk
                         </span>
                       </div>
 
                       <p className="text-xs text-slate-600 dark:text-slate-300 mb-2 leading-relaxed">
                         <strong className="text-slate-700 dark:text-slate-200">Root Cause:</strong>{' '}
-                        {risk.cause}
+                        {risk.rootCause}
                       </p>
 
                       <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-slate-200/40 dark:border-slate-700/40 text-[11px] text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
@@ -475,10 +460,10 @@ export function AnalyticsPage() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-2">
-                      {step.action}
+                      {step.focus}
                     </p>
                     <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Expected Outcome: {step.expectedOutcome}
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Expected Outcome: {step.expectedGain}
                     </div>
                   </div>
                 </div>
@@ -533,7 +518,7 @@ export function AnalyticsPage() {
                       <div
                         className="h-full rounded-full"
                         style={{
-                          width: `${(item.hours / aiInsights.weeklyStudyHours.total) * 100}%`,
+                          width: `${(item.hours / Math.max(aiInsights.weeklyStudyHours.total, 1)) * 100}%`,
                           backgroundColor: item.color,
                         }}
                       />

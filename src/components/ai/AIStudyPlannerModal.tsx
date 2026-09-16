@@ -4,7 +4,6 @@ import {
   X,
   Sparkles,
   Clock,
-  Zap,
   Target,
   CheckCircle2,
   RefreshCw,
@@ -12,10 +11,10 @@ import {
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
-import { useData } from '@/context/DataContext';
-import { useToast } from '@/context/ToastContext';
-import { generateAIStudyPlan, calculateAILearningInsights } from '@/lib/aiEngine';
-import type { AIStudyPlanBlock } from '@/types';
+import { useData } from '../../context/DataContext';
+import { useToast } from '../../context/ToastContext';
+import { generateAIStudyPlan, calculateAILearningInsights } from '../../lib/aiEngine';
+import type { AIStudyPlanBlock } from '../../types';
 
 interface AIStudyPlannerModalProps {
   isOpen: boolean;
@@ -39,7 +38,6 @@ export function AIStudyPlannerModal({ isOpen, onClose }: AIStudyPlannerModalProp
     [currentUser, sessions, intensity]
   );
 
-  const totalXP = useMemo(() => plan.reduce((acc, b) => acc + b.xpReward, 0), [plan]);
   const totalMinutes = useMemo(
     () => plan.reduce((acc, b) => acc + b.durationMinutes, 0),
     [plan]
@@ -177,9 +175,9 @@ export function AIStudyPlannerModal({ isOpen, onClose }: AIStudyPlannerModalProp
               <Clock className="w-4 h-4 text-primary-500" />
               <span>{totalHoursFormatted} hrs this week</span>
             </div>
-            <div className="flex items-center gap-1.5 font-medium text-amber-500">
-              <Zap className="w-4 h-4" />
-              <span>+{totalXP} Potential XP</span>
+            <div className="flex items-center gap-1.5 font-medium text-emerald-600 dark:text-emerald-400">
+              <Target className="w-4 h-4" />
+              <span>7 Planned Sessions</span>
             </div>
             <button
               onClick={handleRegenerate}
@@ -262,8 +260,8 @@ export function AIStudyPlannerModal({ isOpen, onClose }: AIStudyPlannerModalProp
 
                   {/* Card Footer Actions */}
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
-                    <span className="text-[11px] font-semibold text-warning-500 flex items-center gap-1">
-                      <Zap className="w-3 h-3" /> +{block.xpReward} XP
+                    <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                      <Clock className="w-3 h-3 text-slate-400" /> {block.durationMinutes} min session
                     </span>
 
                     {isScheduled ? (
@@ -289,7 +287,7 @@ export function AIStudyPlannerModal({ isOpen, onClose }: AIStudyPlannerModalProp
         <div className="p-4 sm:px-6 bg-slate-50/80 dark:bg-slate-800/60 border-t border-slate-200/60 dark:border-slate-800/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-500" />
-            <span>Schedule automatically syncs with your weekly availability and study streak.</span>
+            <span>Schedule automatically syncs with your weekly availability and learning schedule.</span>
           </div>
           <button
             onClick={onClose}

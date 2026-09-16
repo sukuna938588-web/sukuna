@@ -9,38 +9,28 @@ import {
   Users,
   Brain,
   GraduationCap,
-  ArrowRight,
   ArrowLeftRight,
-  Building,
-  BookOpen,
   Calendar,
   CheckCircle2,
-  Award,
   Zap,
   SlidersHorizontal,
   Star,
-  Clock,
   Video,
   MapPin,
-  Flame,
-  ShieldCheck,
-  TrendingUp,
-  AlertTriangle,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { ProgressRing } from '@/components/ui/ProgressRing';
-import { useToast } from '@/context/ToastContext';
-import { useData } from '@/context/DataContext';
-import { tutors } from '@/data/mockData';
+import { GlassCard } from '../components/ui/GlassCard';
+import { ProgressRing } from '../components/ui/ProgressRing';
+import { useToast } from '../context/ToastContext';
+import { useData } from '../context/DataContext';
+import { tutors } from '../data/mockData';
 import {
   findPeerMatches,
   getMatchTier,
-  getStudentStrongSubjects,
   getStudentWeakSubjects,
-} from '@/lib/matching';
-import { calculateSmartAITutorRecommendations } from '@/lib/aiEngine';
-import { AITutorDetailModal } from '@/components/ai/AITutorDetailModal';
-import type { PeerMatch, AITutorRecommendation } from '@/types';
+} from '../lib/matching';
+import { calculateSmartAITutorRecommendations } from '../lib/aiEngine';
+import { AITutorDetailModal } from '../components/ai/AITutorDetailModal';
+import type { PeerMatch, AITutorRecommendation } from '../types';
 
 export function MatchingPage() {
   const { notify } = useToast();
@@ -73,7 +63,6 @@ export function MatchingPage() {
   const [isBooking, setIsBooking] = useState(false);
 
   // Dynamic user strong & weak subjects
-  const userStrongSubjects = useMemo(() => getStudentStrongSubjects(currentUser), [currentUser]);
   const userWeakSubjects = useMemo(() => getStudentWeakSubjects(currentUser), [currentUser]);
 
   // Compute Smart AI Tutor Recommendations
@@ -180,8 +169,8 @@ export function MatchingPage() {
 
       setIsBooking(false);
       notify({
-        title: 'Session Booked!',
-        message: `Study session with ${bookingPeerMatch.student.name} scheduled successfully!`,
+        title: 'Tutor Match Accepted & Booked!',
+        message: `Match with ${bookingPeerMatch.student.name} accepted! Session successfully scheduled.`,
         type: 'success',
       });
       setBookingPeerMatch(null);
@@ -596,7 +585,7 @@ export function MatchingPage() {
                                 </h3>
                               </div>
                               <p className="text-xs text-slate-500 font-medium">
-                                {rec.tutor.department} · {rec.tutor.title}
+                                {rec.tutor.department} · {rec.tutor.title || 'Peer Tutor'}
                               </p>
                               <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
                                 <span className="flex items-center gap-1 text-warning-500 font-bold">
@@ -750,7 +739,7 @@ export function MatchingPage() {
                                 {pm.student.department} · Year {pm.student.year}
                               </p>
                               <p className="text-[11px] text-slate-400 mt-0.5">
-                                {pm.student.university}
+                                {pm.student.university || `${pm.student.department} Honors`}
                               </p>
                             </div>
                           </div>

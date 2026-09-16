@@ -1,15 +1,18 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Sparkles, Brain, Calendar, TrendingUp, Trophy, Bot, ArrowRight,
-  Star, Zap, Users, Target, CheckCircle2, Quote, LogIn, UserPlus
+  Star, Zap, Users, Target, CheckCircle2, Quote, LogIn, UserPlus, Download
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Counter } from '@/components/ui/Counter';
-import { ParticleBackground } from '@/components/ui/ParticleBackground';
-import { useTheme } from '@/context/ThemeContext';
-import { useData } from '@/context/DataContext';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Counter } from '../components/ui/Counter';
+import { ParticleBackground } from '../components/ui/ParticleBackground';
+import { useTheme } from '../context/ThemeContext';
+import { useData } from '../context/DataContext';
 import { Sun, Moon } from 'lucide-react';
+import { StudySyncLogo } from '../components/brand/StudySyncLogo';
+import { BrandKitModal } from '../components/brand/BrandKitModal';
 
 const features = [
   { icon: Brain, title: 'AI Tutor Matching', desc: 'Our engine scores tutors on expertise, availability, ratings, and compatibility to find your perfect match.' },
@@ -43,6 +46,7 @@ const stats = [
 export function LandingPage() {
   const { theme, toggle } = useTheme();
   const { isAuthenticated } = useData();
+  const [showBrandKit, setShowBrandKit] = useState(false);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -51,18 +55,28 @@ export function LandingPage() {
       {/* Nav */}
       <nav className="sticky top-0 z-40 px-4 lg:px-8 py-4">
         <div className="glass rounded-2xl px-4 py-3 flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-glow">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display font-bold text-lg">StudySync<span className="text-gradient">AI</span></span>
-          </div>
+          <Link to="/" className="flex items-center transition-transform hover:scale-[1.02]">
+            <StudySyncLogo variant="navbar" animated />
+          </Link>
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600 dark:text-slate-300">
             <a href="#features" className="hover:text-primary-500 transition-colors">Features</a>
             <a href="#how" className="hover:text-primary-500 transition-colors">How it works</a>
             <a href="#testimonials" className="hover:text-primary-500 transition-colors">Testimonials</a>
+            <button
+              onClick={() => setShowBrandKit(true)}
+              className="inline-flex items-center gap-1 text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors font-semibold"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Brand Kit
+            </button>
           </div>
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowBrandKit(true)}
+              className="hidden sm:inline-flex md:hidden items-center gap-1 px-2.5 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-xs font-semibold text-indigo-400"
+            >
+              Brand Kit
+            </button>
+
             <button onClick={toggle} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle theme">
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
@@ -95,9 +109,18 @@ export function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
           >
-            <div className="inline-flex items-center gap-2 glass rounded-full px-3 py-1.5 text-xs font-medium mb-6">
-              <Zap className="w-3.5 h-3.5 text-primary-500" />
-              AI-Powered Peer Tutor Matching
+            <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="inline-flex items-center gap-2 glass rounded-full px-3.5 py-1.5 text-xs font-medium">
+                <Zap className="w-3.5 h-3.5 text-primary-500" />
+                AI-Powered Peer Tutor Matching
+              </div>
+              <button
+                onClick={() => setShowBrandKit(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-indigo-500/40 bg-indigo-500/10 hover:bg-indigo-500/25 text-indigo-500 dark:text-indigo-300 text-xs font-semibold shadow-sm transition-all group"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                View Brand Kit & Vector Logos
+              </button>
             </div>
             <h1 className="font-display font-extrabold text-5xl lg:text-7xl leading-[1.05] tracking-tight">
               Find your <span className="text-gradient">perfect tutor</span> in seconds.
@@ -186,6 +209,93 @@ export function LandingPage() {
             </motion.div>
           </div>
         </div>
+      </section>
+
+      {/* Official Master Logo Showcase */}
+      <section className="px-4 lg:px-8 py-8 max-w-7xl mx-auto">
+        <GlassCard className="p-6 lg:p-8 border border-slate-200/80 dark:border-slate-800/80 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200/60 dark:border-slate-800/60">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold mb-2">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Official StudySync AI Master Logo
+              </div>
+              <h2 className="text-xl lg:text-2xl font-bold font-display text-slate-900 dark:text-white">
+                Exact Horizontal Technology Logo & Brand Identity
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                Futuristic 3D ribbon S, top graduation cap, center student nodes with curved connection paths, bottom AI circuits, bold white "StudySync", and blue-purple-cyan gradient "AI".
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              <a
+                href="/studysync-logo-dark-navy.svg"
+                download="StudySync_AI_Dark_Navy_Logo.svg"
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 text-white text-xs font-bold hover:brightness-110 transition-all flex items-center gap-1.5 shadow-glow"
+              >
+                <Download className="w-3.5 h-3.5" /> Dark Navy SVG
+              </a>
+              <a
+                href="/studysync-logo-transparent.svg"
+                download="StudySync_AI_Transparent_Logo.svg"
+                className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-xs font-bold hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm"
+              >
+                <Download className="w-3.5 h-3.5" /> Transparent SVG
+              </a>
+              <button
+                onClick={() => setShowBrandKit(true)}
+                className="px-4 py-2.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Open Brand Kit
+              </button>
+            </div>
+          </div>
+
+          {/* Master Logo Displays: Dark Navy Gradient & Transparent Versions */}
+          <div className="grid md:grid-cols-2 gap-5 pt-6">
+            {/* Dark Navy Canvas (Official Master Presentation) */}
+            <div className="p-6 rounded-2xl bg-[#050B1A] border border-indigo-500/30 shadow-2xl flex flex-col items-center justify-center text-center relative group overflow-hidden">
+              <span className="absolute top-3 left-4 text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold">
+                Dark Navy Gradient Canvas (Official Branding)
+              </span>
+              <div className="py-6 w-full flex justify-center">
+                <img
+                  src="/studysync-logo-dark-navy.svg"
+                  alt="StudySync AI Dark Navy Master Logo"
+                  className="max-h-20 sm:max-h-24 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-slate-300">
+                <span className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700">Dark Navy #050B1A</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700">Bold White Font</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700 text-cyan-400">Cyan #06B6D4</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700 text-indigo-400">Indigo #4F46E5</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-700 text-purple-400">Purple #7C3AED</span>
+              </div>
+            </div>
+
+            {/* Transparent Canvas with Subtle Ambient Grid & Glow */}
+            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800/90 shadow-2xl flex flex-col items-center justify-center text-center relative group overflow-hidden">
+              <span className="absolute top-3 left-4 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                Transparent Vector Version (Hero & Navbar Ready)
+              </span>
+              <div className="py-6 w-full flex justify-center">
+                <img
+                  src="/studysync-logo-transparent.svg"
+                  alt="StudySync AI Transparent Master Logo"
+                  className="max-h-20 sm:max-h-24 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+                />
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px] text-slate-400">
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">3D Ribbon "S"</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">Graduation Cap</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">Curved Node Path</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800">AI Circuit Board</span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-sky-400">Gradient "AI"</span>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
       </section>
 
       {/* Stats */}
@@ -303,15 +413,24 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="px-4 lg:px-8 py-10 max-w-7xl mx-auto border-t border-slate-200/60 dark:border-slate-700/60">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-display font-semibold">StudySync AI</span>
+          <div className="flex items-center gap-4">
+            <StudySyncLogo variant="horizontal" size="sm" showTagline />
           </div>
-          <p>Built for the modern student. A final-year project demonstration.</p>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowBrandKit(true)}
+              className="text-xs text-indigo-500 dark:text-indigo-400 hover:underline flex items-center gap-1 font-medium"
+            >
+              <Sparkles className="w-3 h-3 text-cyan-400" /> View Brand Kit & Vector Assets
+            </button>
+            <span className="text-slate-400 dark:text-slate-600">•</span>
+            <p className="text-xs">Built for the modern student. A final-year project demonstration.</p>
+          </div>
         </div>
       </footer>
+
+      <BrandKitModal isOpen={showBrandKit} onClose={() => setShowBrandKit(false)} />
     </div>
   );
 }

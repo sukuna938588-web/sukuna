@@ -1,194 +1,1045 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Plus, Pencil, Trash2, BookOpen, Layers,
+  BookOpen,
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  Building2,
+  Sparkles,
+  Award,
+  Clock,
+  ArrowUpDown,
+  LayoutGrid,
+  List,
+  X,
+  AlertTriangle,
+  RotateCcw,
+  Check,
+  CheckCircle2,
+  GraduationCap,
 } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { Modal, Field, SelectField } from '@/components/ui/Modal';
-import { useToast } from '@/context/ToastContext';
-import { useData } from '@/context/DataContext';
-import type { Subject } from '@/types';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Modal } from '../components/ui/Modal';
+import { useData } from '../context/DataContext';
+import { useToast } from '../context/ToastContext';
+import { sampleSubjects } from '../data/mockData';
+import type { Subject } from '../types';
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Beginner: 'bg-success-500/15 text-success-600 dark:text-success-400',
-  Intermediate: 'bg-warning-500/15 text-warning-600 dark:text-warning-400',
-  Advanced: 'bg-error-500/15 text-error-600 dark:text-error-400',
+const COMMON_DEPARTMENTS = [
+  'Computer Science',
+  'Data Science',
+  'Software Engineering',
+  'Mathematics',
+  'Electrical Engineering',
+  'Artificial Intelligence',
+  'Information Systems',
+];
+
+const DIFFICULTY_CONFIG = {
+  Beginner: {
+    badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25',
+    dot: 'bg-emerald-500',
+    desc: 'Foundational concepts & syntax',
+  },
+  Intermediate: {
+    badge: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/25',
+    dot: 'bg-sky-500',
+    desc: 'Applied theory & practical models',
+  },
+  Advanced: {
+    badge: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/25',
+    dot: 'bg-violet-500',
+    desc: 'Complex systems & research depth',
+  },
+};
+
+type ViewMode = 'grid' | 'table';
+type SortOption = 'name-asc' | 'name-desc' | 'code-asc' | 'credits-desc' | 'credits-asc' | 'difficulty';
+
+interface SubjectFormData {
+  code: string;
+  name: string;
+  department: string;
+  credits: number;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  description: string;
+}
+
+const initialFormState: SubjectFormData = {
+  code: '',
+  name: '',
+  department: 'Computer Science',
+  credits: 4,
+  difficulty: 'Intermediate',
+  description: '',
 };
 
 export function SubjectsPage() {
+  const { subjects, addSubject, updateSubject, deleteSubject, currentUser } = useData();
   const { notify } = useToast();
-  const { subjects, addSubject, updateSubject, deleteSubject } = useData();
-  const [query, setQuery] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Subject | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<Subject | null>(null);
 
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [difficulty, setDifficulty] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
+  // Search & Filters state
+  const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState<string>('All');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
+  const [selectedCredits, setSelectedCredits] = useState<string>('All');
+  const [sortBy, setSortBy] = useState<SortOption>('code-asc');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
-  const filtered = subjects.filter(
-    (s) => s.name.toLowerCase().includes(query.toLowerCase()) || s.code.toLowerCase().includes(query.toLowerCase())
-  );
+  // Modal states
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [formData, setFormData] = useState<SubjectFormData>(initialFormState);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-  const openAdd = () => {
-    setEditing(null);
-    setName(''); setCode(''); setDifficulty('Beginner');
-    setModalOpen(true);
+  // Delete confirmation modal state
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+
+  // Reset confirmation modal state
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  // Derive dynamic list of all departments from current subjects + common departments
+  const allDepartments = useMemo(() => {
+    const deptSet = new Set<string>(COMMON_DEPARTMENTS);
+    subjects.forEach((s) => {
+      if (s.department) deptSet.add(s.department);
+    });
+    return Array.from(deptSet).sort();
+  }, [subjects]);
+
+  // Derive KPIs
+  const stats = useMemo(() => {
+    const totalCount = subjects.length;
+    const deptsCount = new Set(subjects.map((s) => s.department || 'Computer Science')).size;
+    const totalCredits = subjects.reduce((acc, s) => acc + (s.credits || 3), 0);
+    const advancedCount = subjects.filter((s) => s.difficulty === 'Advanced').length;
+    return { totalCount, deptsCount, totalCredits, advancedCount };
+  }, [subjects]);
+
+  // Filter and sort subjects
+  const filteredSubjects = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const filtered = subjects.filter((s) => {
+      const code = (s.code || '').toLowerCase();
+      const name = (s.name || '').toLowerCase();
+      const dept = (s.department || '').toLowerCase();
+      const desc = (s.description || '').toLowerCase();
+
+      const matchesSearch =
+        !query ||
+        code.includes(query) ||
+        name.includes(query) ||
+        dept.includes(query) ||
+        desc.includes(query);
+
+      const matchesDept =
+        selectedDept === 'All' || (s.department || 'Computer Science') === selectedDept;
+
+      const matchesDiff =
+        selectedDifficulty === 'All' || s.difficulty === selectedDifficulty;
+
+      const creditsVal = s.credits ?? 3;
+      const matchesCredits =
+        selectedCredits === 'All' || String(creditsVal) === selectedCredits;
+
+      return matchesSearch && matchesDept && matchesDiff && matchesCredits;
+    });
+
+    // Sorting
+    return filtered.sort((a, b) => {
+      if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
+      if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
+      if (sortBy === 'code-asc') return a.code.localeCompare(b.code);
+      if (sortBy === 'credits-desc') return (b.credits || 3) - (a.credits || 3);
+      if (sortBy === 'credits-asc') return (a.credits || 3) - (b.credits || 3);
+      if (sortBy === 'difficulty') {
+        const order = { Beginner: 1, Intermediate: 2, Advanced: 3 };
+        return order[a.difficulty] - order[b.difficulty];
+      }
+      return 0;
+    });
+  }, [subjects, search, selectedDept, selectedDifficulty, selectedCredits, sortBy]);
+
+  const hasActiveFilters =
+    search !== '' ||
+    selectedDept !== 'All' ||
+    selectedDifficulty !== 'All' ||
+    selectedCredits !== 'All';
+
+  const clearAllFilters = () => {
+    setSearch('');
+    setSelectedDept('All');
+    setSelectedDifficulty('All');
+    setSelectedCredits('All');
+    setSortBy('code-asc');
   };
 
-  const openEdit = (s: Subject) => {
-    setEditing(s);
-    setName(s.name); setCode(s.code); setDifficulty(s.difficulty);
-    setModalOpen(true);
+  // Open Add Modal
+  const handleOpenAdd = () => {
+    setEditingSubject(null);
+    setFormData(initialFormState);
+    setFormErrors({});
+    setIsFormModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (!name.trim() || !code.trim()) {
-      notify('Subject Name and Code are required', 'error');
-      return;
-    }
-    if (editing) {
-      updateSubject({ ...editing, name: name.trim(), code: code.trim(), difficulty });
-      notify('Subject updated successfully', 'success');
+  // Open Edit Modal
+  const handleOpenEdit = (sub: Subject) => {
+    setEditingSubject(sub);
+    setFormData({
+      code: sub.code,
+      name: sub.name,
+      department: sub.department || 'Computer Science',
+      credits: sub.credits ?? 3,
+      difficulty: sub.difficulty,
+      description: sub.description || '',
+    });
+    setFormErrors({});
+    setIsFormModalOpen(true);
+  };
+
+  // Validate form
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    const codeClean = formData.code.trim().toUpperCase();
+    if (!codeClean) {
+      errors.code = 'Subject code is required (e.g. CS201)';
+    } else if (codeClean.length < 2 || codeClean.length > 12) {
+      errors.code = 'Code must be between 2 and 12 characters';
     } else {
-      addSubject({ id: `sub-${Date.now()}`, name: name.trim(), code: code.trim(), difficulty });
-      notify('Subject added successfully', 'success');
+      // Check duplicate code if not editing the same item
+      const duplicate = subjects.find(
+        (s) => s.code.toUpperCase() === codeClean && s.id !== editingSubject?.id
+      );
+      if (duplicate) {
+        errors.code = `Code "${codeClean}" already exists for ${duplicate.name}`;
+      }
     }
-    setModalOpen(false);
+
+    const nameClean = formData.name.trim();
+    if (!nameClean) {
+      errors.name = 'Subject name is required';
+    } else if (nameClean.length < 3) {
+      errors.name = 'Subject name must be at least 3 characters';
+    }
+
+    if (!formData.department.trim()) {
+      errors.department = 'Department is required';
+    }
+
+    if (!formData.credits || formData.credits < 1 || formData.credits > 12) {
+      errors.credits = 'Credits must be between 1 and 12';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleDelete = () => {
-    if (confirmDelete) {
-      deleteSubject(confirmDelete.id);
-      notify('Subject deleted', 'info');
-      setConfirmDelete(null);
+  // Save Add / Edit
+  const handleSubmitForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const formattedCode = formData.code.trim().toUpperCase();
+    const formattedName = formData.name.trim();
+    const formattedDept = formData.department.trim();
+    const formattedDesc = formData.description.trim();
+
+    if (editingSubject) {
+      // Edit existing
+      const updated: Subject = {
+        ...editingSubject,
+        code: formattedCode,
+        name: formattedName,
+        department: formattedDept,
+        credits: Number(formData.credits),
+        difficulty: formData.difficulty,
+        description: formattedDesc,
+      };
+      updateSubject(updated);
+      notify(`Updated "${updated.name}" (${updated.code}) successfully`, 'success');
+    } else {
+      // Create new
+      const newSubject: Subject = {
+        id: `sub-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+        code: formattedCode,
+        name: formattedName,
+        department: formattedDept,
+        credits: Number(formData.credits),
+        difficulty: formData.difficulty,
+        description: formattedDesc,
+      };
+      addSubject(newSubject);
+      notify(`Created "${newSubject.name}" (${newSubject.code}) successfully`, 'success');
     }
+
+    setIsFormModalOpen(false);
   };
 
-  const diffCount = {
-    Beginner: subjects.filter((s) => s.difficulty === 'Beginner').length,
-    Intermediate: subjects.filter((s) => s.difficulty === 'Intermediate').length,
-    Advanced: subjects.filter((s) => s.difficulty === 'Advanced').length,
+  // Confirm Delete
+  const handleConfirmDelete = () => {
+    if (!subjectToDelete) return;
+    const deletedName = subjectToDelete.name;
+    const deletedCode = subjectToDelete.code;
+    deleteSubject(subjectToDelete.id);
+    notify(`Deleted "${deletedName}" (${deletedCode})`, 'info');
+    setSubjectToDelete(null);
+  };
+
+  // Confirm Reset
+  const handleResetCatalog = () => {
+    // Overwrite with original sample subjects
+    sampleSubjects.forEach((sub) => {
+      const exists = subjects.some((s) => s.id === sub.id || s.code === sub.code);
+      if (!exists) {
+        addSubject(sub);
+      }
+    });
+    notify('Catalog restored with standard curriculum subjects', 'success');
+    setIsResetModalOpen(false);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-7 pb-20">
+      {/* Top Banner & Title Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
         <div>
-          <h1 className="font-display font-bold text-2xl lg:text-3xl">Subjects Management</h1>
-          <p className="text-sm text-slate-500 mt-1">Add, edit, and manage all subjects. Data persists across refreshes.</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-500/10 dark:bg-primary-400/10 text-primary-600 dark:text-primary-400 text-xs font-semibold mb-2">
+            <BookOpen className="w-3.5 h-3.5" />
+            Curriculum Directory & Academic Credits
+          </div>
+          <h1 className="font-display font-bold text-2xl lg:text-3xl text-slate-900 dark:text-slate-100 tracking-tight">
+            Subject Management
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+            Configure courses, academic departments, credit ratings, and difficulty levels.
+            All records persist dynamically to local storage.
+          </p>
         </div>
-        <button onClick={openAdd} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold shadow-glow hover:shadow-glow-cyan transition-shadow flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Add Subject
-        </button>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setIsResetModalOpen(true)}
+            title="Reset catalog to default courses"
+            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs font-medium text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5 shadow-xs"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Reset Defaults</span>
+          </button>
+
+          <button
+            onClick={handleOpenAdd}
+            className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shadow-sm hover:shadow active:scale-[0.98]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Subject</span>
+          </button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Subjects', value: subjects.length, icon: BookOpen, color: 'text-primary-500' },
-          { label: 'Beginner', value: diffCount.Beginner, icon: Layers, color: 'text-success-500' },
-          { label: 'Intermediate', value: diffCount.Intermediate, icon: Layers, color: 'text-warning-500' },
-          { label: 'Advanced', value: diffCount.Advanced, icon: Layers, color: 'text-error-500' },
-        ].map((s, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-            <GlassCard hover className="p-5">
-              <div className={`w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center ${s.color} mb-3`}>
-                <s.icon className="w-5 h-5" />
-              </div>
-              <p className="text-2xl font-bold font-display">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
-            </GlassCard>
-          </motion.div>
-        ))}
+      {/* Metric / Stat Ribbon (Stripe / Apple Style) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <GlassCard className="p-4 flex items-center gap-3.5 border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-10 h-10 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+            <BookOpen className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Subjects</p>
+            <p className="font-display font-bold text-xl text-slate-900 dark:text-slate-100">{stats.totalCount}</p>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-4 flex items-center gap-3.5 border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Departments</p>
+            <p className="font-display font-bold text-xl text-slate-900 dark:text-slate-100">{stats.deptsCount}</p>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-4 flex items-center gap-3.5 border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Clock className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Credits</p>
+            <p className="font-display font-bold text-xl text-slate-900 dark:text-slate-100">{stats.totalCredits}</p>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-4 flex items-center gap-3.5 border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center shrink-0">
+            <Award className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Advanced Courses</p>
+            <p className="font-display font-bold text-xl text-slate-900 dark:text-slate-100">{stats.advancedCount}</p>
+          </div>
+        </GlassCard>
       </div>
 
-      {/* Search + Grid */}
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <GlassCard className="p-6">
-          <div className="relative mb-4 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+      {/* Search & Filter Toolbar (Apple + Stripe style) */}
+      <GlassCard className="p-4 space-y-3.5 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+        {/* Main Row: Search + View Mode + Sort */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search Box */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name or code..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-sm border border-transparent focus:border-primary-500/40 focus:outline-none"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by code (e.g. CS201), name, department, or keyword..."
+              className="w-full pl-10 pr-9 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Controls Right */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Sort Dropdown */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="bg-transparent text-slate-700 dark:text-slate-200 text-xs focus:outline-none cursor-pointer pr-1"
+              >
+                <option value="code-asc" className="bg-white dark:bg-slate-900">Code (A–Z)</option>
+                <option value="name-asc" className="bg-white dark:bg-slate-900">Name (A–Z)</option>
+                <option value="name-desc" className="bg-white dark:bg-slate-900">Name (Z–A)</option>
+                <option value="credits-desc" className="bg-white dark:bg-slate-900">Credits (High to Low)</option>
+                <option value="credits-asc" className="bg-white dark:bg-slate-900">Credits (Low to High)</option>
+                <option value="difficulty" className="bg-white dark:bg-slate-900">Difficulty Level</option>
+              </select>
+            </div>
+
+            {/* View Mode Toggle: Grid vs Table */}
+            <div className="flex items-center p-1 rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="Grid Card View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`p-1.5 rounded-lg transition-all ${
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+                title="Data Table View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Filter Row: Department, Difficulty, Credits */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Department Filter */}
+            <div className="flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={selectedDept}
+                onChange={(e) => setSelectedDept(e.target.value)}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="All" className="bg-white dark:bg-slate-900">All Departments</option>
+                {allDepartments.map((dept) => (
+                  <option key={dept} value={dept} className="bg-white dark:bg-slate-900">
+                    {dept}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Difficulty Segmented Filter (Apple Style) */}
+            <div className="flex items-center p-0.5 rounded-lg bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+              {['All', 'Beginner', 'Intermediate', 'Advanced'].map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setSelectedDifficulty(diff)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all ${
+                    selectedDifficulty === diff
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-semibold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  {diff}
+                </button>
+              ))}
+            </div>
+
+            {/* Credits Filter */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400 font-medium">Credits:</span>
+              <select
+                value={selectedCredits}
+                onChange={(e) => setSelectedCredits(e.target.value)}
+                className="px-2.5 py-1 rounded-lg bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
+              >
+                <option value="All" className="bg-white dark:bg-slate-900">All Credits</option>
+                <option value="1" className="bg-white dark:bg-slate-900">1 Credit</option>
+                <option value="2" className="bg-white dark:bg-slate-900">2 Credits</option>
+                <option value="3" className="bg-white dark:bg-slate-900">3 Credits</option>
+                <option value="4" className="bg-white dark:bg-slate-900">4 Credits</option>
+                <option value="5" className="bg-white dark:bg-slate-900">5 Credits</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Results Summary & Reset Filter */}
+          <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+            <span>
+              Showing <strong className="text-slate-900 dark:text-slate-100">{filteredSubjects.length}</strong> of {subjects.length}
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-primary-600 dark:text-primary-400 hover:underline font-medium text-xs flex items-center gap-1 ml-1"
+              >
+                <X className="w-3 h-3" /> Clear filters
+              </button>
+            )}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Main Content: Card Grid View or Data Table View */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <AnimatePresence>
+            {filteredSubjects.map((sub, i) => {
+              const diffConfig = DIFFICULTY_CONFIG[sub.difficulty] || DIFFICULTY_CONFIG.Intermediate;
+              const userSkill = currentUser?.skills?.find(
+                (sk) => sk.subject.toLowerCase() === sub.name.toLowerCase()
+              );
+
+              return (
+                <motion.div
+                  key={sub.id}
+                  layout
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, delay: Math.min(i * 0.03, 0.3) }}
+                >
+                  <GlassCard
+                    hover
+                    className="p-5 h-full flex flex-col justify-between border border-slate-200/80 dark:border-slate-800/80 relative group"
+                  >
+                    <div>
+                      {/* Top Row: Code Badge + Difficulty Pill + Quick Actions */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700/60">
+                            {sub.code}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${diffConfig.badge}`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${diffConfig.dot}`} />
+                            {sub.difficulty}
+                          </span>
+                        </div>
+
+                        {/* Edit & Delete Action Buttons */}
+                        <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleOpenEdit(sub)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-950/50 transition-colors"
+                            title="Edit Subject"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => setSubjectToDelete(sub)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+                            title="Delete Subject"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subject Name */}
+                      <h3 className="font-display font-bold text-lg text-slate-900 dark:text-slate-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                        {sub.name}
+                      </h3>
+
+                      {/* Department Tag */}
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="font-medium truncate">{sub.department || 'Computer Science'}</span>
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-2.5 leading-relaxed line-clamp-2">
+                        {sub.description || 'Core academic syllabus covering foundational concepts and applied systems.'}
+                      </p>
+
+                      {/* Student Profile Connection (if enrolled or has rating) */}
+                      {userSkill && (
+                        <div className="mt-3.5 px-3 py-2 rounded-xl bg-primary-500/10 dark:bg-primary-500/15 border border-primary-500/20 flex items-center justify-between text-xs text-primary-700 dark:text-primary-300">
+                          <span className="font-medium flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+                            Your Skill Mastery
+                          </span>
+                          <span className="font-bold">{userSkill.rating}%</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Info Bar: Credits & Status */}
+                    <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 font-semibold text-slate-700 dark:text-slate-300">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {sub.credits || 3} Credits
+                      </span>
+
+                      <span className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
+                        <GraduationCap className="w-3.5 h-3.5 text-primary-500" />
+                        Peer Tutoring
+                      </span>
+                    </div>
+                  </GlassCard>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      ) : (
+        /* Stripe / Apple Data Table View */
+        <GlassCard className="overflow-hidden border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200/80 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-800/40 text-slate-500 uppercase tracking-wider font-semibold">
+                  <th className="py-3.5 px-4 font-mono">Code</th>
+                  <th className="py-3.5 px-4">Subject Name</th>
+                  <th className="py-3.5 px-4">Department</th>
+                  <th className="py-3.5 px-4">Credits</th>
+                  <th className="py-3.5 px-4">Difficulty</th>
+                  <th className="py-3.5 px-4 hidden md:table-cell">Overview</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70 text-slate-700 dark:text-slate-300">
+                {filteredSubjects.map((sub) => {
+                  const diffConfig = DIFFICULTY_CONFIG[sub.difficulty] || DIFFICULTY_CONFIG.Intermediate;
+                  return (
+                    <tr
+                      key={sub.id}
+                      className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors group"
+                    >
+                      <td className="py-3 px-4 font-mono font-bold text-slate-900 dark:text-slate-100">
+                        <span className="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60">
+                          {sub.code}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-slate-100">
+                        {sub.name}
+                      </td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
+                        <span className="flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          {sub.department || 'Computer Science'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">
+                        {sub.credits || 3} cr
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${diffConfig.badge}`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${diffConfig.dot}`} />
+                          {sub.difficulty}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate hidden md:table-cell">
+                        {sub.description || '—'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleOpenEdit(sub)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Edit"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setSubjectToDelete(sub)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* Empty States */}
+      {filteredSubjects.length === 0 && (
+        <GlassCard className="p-12 text-center border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-12 h-12 mx-auto mb-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-slate-100">
+            No subjects match your query
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            {hasActiveFilters
+              ? 'Try adjusting or clearing your active filters to see all available academic subjects.'
+              : 'Your curriculum directory is currently empty. Click "Add Subject" to register courses.'}
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+            <button
+              onClick={handleOpenAdd}
+              className="px-3.5 py-1.5 rounded-xl bg-primary-500 text-white text-xs font-semibold hover:bg-primary-600 transition-colors flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add New Subject
+            </button>
+          </div>
+        </GlassCard>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 1 & 2 & 3. ADD / EDIT SUBJECT MODAL FORM (Apple + Stripe style) */}
+      {/* ========================================================================= */}
+      <Modal
+        open={isFormModalOpen}
+        onClose={() => setIsFormModalOpen(false)}
+        maxWidth="max-w-xl"
+        title={editingSubject ? 'Edit Subject Details' : 'Add New Subject'}
+      >
+        <form onSubmit={handleSubmitForm} className="space-y-4">
+          <p className="text-xs text-slate-500 -mt-2">
+            {editingSubject
+              ? 'Update the course code, department, academic credits, or difficulty.'
+              : 'Add a new subject to the university catalog and tutor matching system.'}
+          </p>
+
+          {/* Row 1: Code & Credits */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Subject Code */}
+            <div className="sm:col-span-2 space-y-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Subject Code <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                placeholder="e.g. CS201, AI402"
+                className={`w-full px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border font-mono text-sm uppercase focus:outline-none transition-colors text-slate-900 dark:text-slate-100 ${
+                  formErrors.code
+                    ? 'border-rose-500 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'
+                }`}
+              />
+              {formErrors.code && (
+                <p className="text-[11px] text-rose-500 font-medium">{formErrors.code}</p>
+              )}
+            </div>
+
+            {/* Credits */}
+            <div className="space-y-1">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Credits <span className="text-rose-500">*</span>
+              </label>
+              <select
+                value={formData.credits}
+                onChange={(e) => setFormData({ ...formData, credits: Number(e.target.value) })}
+                className="w-full px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-slate-100 cursor-pointer"
+              >
+                {[1, 2, 3, 4, 5, 6].map((cr) => (
+                  <option key={cr} value={cr} className="bg-white dark:bg-slate-900">
+                    {cr} {cr === 1 ? 'Credit' : 'Credits'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2: Subject Name */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Subject Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Distributed Operating Systems"
+              className={`w-full px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border text-sm focus:outline-none transition-colors text-slate-900 dark:text-slate-100 ${
+                formErrors.name
+                  ? 'border-rose-500 focus:border-rose-500'
+                  : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'
+              }`}
+            />
+            {formErrors.name && (
+              <p className="text-[11px] text-rose-500 font-medium">{formErrors.name}</p>
+            )}
+          </div>
+
+          {/* Row 3: Department */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Academic Department <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                list="department-suggestions"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                placeholder="Select or enter academic department..."
+                className={`w-full px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border text-sm focus:outline-none transition-colors text-slate-900 dark:text-slate-100 ${
+                  formErrors.department
+                    ? 'border-rose-500 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'
+                }`}
+              />
+              <datalist id="department-suggestions">
+                {allDepartments.map((dept) => (
+                  <option key={dept} value={dept} />
+                ))}
+              </datalist>
+            </div>
+            {formErrors.department && (
+              <p className="text-[11px] text-rose-500 font-medium">{formErrors.department}</p>
+            )}
+          </div>
+
+          {/* Row 4: Difficulty Level Segmented Selector (Apple Style) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Difficulty Level
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['Beginner', 'Intermediate', 'Advanced'] as const).map((diff) => {
+                const isSelected = formData.difficulty === diff;
+                const config = DIFFICULTY_CONFIG[diff];
+                return (
+                  <button
+                    key={diff}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, difficulty: diff })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      isSelected
+                        ? 'border-primary-500 bg-primary-500/10 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/50 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                        <span className={`w-2 h-2 rounded-full ${config.dot}`} />
+                        {diff}
+                      </span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-primary-500" />}
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1 line-clamp-1 leading-tight">
+                      {config.desc}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Row 5: Course Description / Syllabus */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Description & Learning Objectives
+            </label>
+            <textarea
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Outline the core topics, practical labs, and conceptual scope..."
+              className="w-full px-3.5 py-2 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:border-primary-500 transition-colors text-slate-900 dark:text-slate-100 resize-none placeholder-slate-400"
             />
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="py-16 text-center">
-              <BookOpen className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">No subjects found. Click "Add Subject" to create one.</p>
+          {/* Live Preview Card */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-[11px] font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+              Live Preview
+            </p>
+            <div className="p-3.5 rounded-2xl bg-white/50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 shadow-xs">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="font-mono font-bold text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                  {formData.code.trim().toUpperCase() || 'CODE101'}
+                </span>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                    DIFFICULTY_CONFIG[formData.difficulty]?.badge
+                  }`}
+                >
+                  {formData.difficulty}
+                </span>
+              </div>
+              <h4 className="font-display font-bold text-sm text-slate-900 dark:text-slate-100">
+                {formData.name.trim() || 'Subject Title'}
+              </h4>
+              <p className="text-[11px] text-slate-500 mt-0.5 flex items-center justify-between">
+                <span>{formData.department || 'Department'}</span>
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  {formData.credits} Credits
+                </span>
+              </p>
             </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((s, i) => (
-                <motion.div key={s.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}>
-                  <div className="p-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 hover:shadow-glass transition-shadow group">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-500/20 to-accent-500/20 flex items-center justify-center">
-                        <BookOpen className="w-5 h-5 text-primary-500" />
-                      </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-primary-500 transition-colors">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setConfirmDelete(s)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-error-500 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="font-semibold text-sm">{s.name}</p>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">{s.code}</p>
-                    <span className={`inline-block mt-2 text-[10px] px-2 py-0.5 rounded-full ${DIFFICULTY_COLORS[s.difficulty]}`}>
-                      {s.difficulty}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </GlassCard>
-      </motion.div>
+          </div>
 
-      {/* Add/Edit Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Edit Subject' : 'Add Subject'} maxWidth="max-w-md">
+          {/* Modal Action Buttons */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsFormModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs font-bold transition-all shadow-xs active:scale-[0.98] flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {editingSubject ? 'Save Changes' : 'Create Subject'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ========================================================================= */}
+      {/* 4. DELETE CONFIRMATION POPUP (Modal) */}
+      {/* ========================================================================= */}
+      <Modal
+        open={Boolean(subjectToDelete)}
+        onClose={() => setSubjectToDelete(null)}
+        maxWidth="max-w-md"
+        title="Delete Subject Confirmation"
+      >
         <div className="space-y-4">
-          <Field label="Subject Name" value={name} onChange={setName} placeholder="e.g. Machine Learning" />
-          <Field label="Subject Code" value={code} onChange={setCode} placeholder="e.g. CS401" />
-          <SelectField
-            label="Difficulty Level"
-            value={difficulty}
-            onChange={(v) => setDifficulty(v as 'Beginner' | 'Intermediate' | 'Advanced')}
-            options={[
-              { value: 'Beginner', label: 'Beginner' },
-              { value: 'Intermediate', label: 'Intermediate' },
-              { value: 'Advanced', label: 'Advanced' },
-            ]}
-          />
-          <button
-            onClick={handleSave}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white font-semibold hover:shadow-glow transition-shadow"
-          >
-            {editing ? 'Update Subject' : 'Save Subject'}
-          </button>
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-800 dark:text-slate-200">
+                Are you sure you want to delete{' '}
+                <strong className="text-slate-900 dark:text-slate-50 font-bold">
+                  "{subjectToDelete?.name}" ({subjectToDelete?.code})
+                </strong>
+                ?
+              </p>
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                This course will be removed from your catalog and tutor matching index.
+                Any student preferences linked to this subject code will be unlinked.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => setSubjectToDelete(null)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmDelete}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Course
+            </button>
+          </div>
         </div>
       </Modal>
 
-      {/* Delete confirmation */}
-      <Modal open={!!confirmDelete} onClose={() => setConfirmDelete(null)} title="Delete Subject" maxWidth="max-w-sm">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-full bg-error-500/15 flex items-center justify-center mx-auto mb-4">
-            <Trash2 className="w-7 h-7 text-error-500" />
+      {/* ========================================================================= */}
+      {/* 5. RESET CATALOG CONFIRMATION MODAL */}
+      {/* ========================================================================= */}
+      <Modal
+        open={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        maxWidth="max-w-md"
+        title="Restore Default Catalog"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-800 dark:text-slate-200">
+                Restore the default academic subjects?
+              </p>
+              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+                This will re-add all standard curriculum subjects (Data Structures, Algorithms,
+                Databases, Machine Learning, Web Development, etc.) with pre-configured credit values.
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
-            Are you sure you want to delete <span className="font-semibold">{confirmDelete?.name}</span> ({confirmDelete?.code})? This action cannot be undone.
-          </p>
-          <div className="flex gap-3">
-            <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl glass font-medium">Cancel</button>
-            <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl bg-error-500 text-white font-semibold hover:opacity-90 transition-opacity">Delete</button>
+
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsResetModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleResetCatalog}
+              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Restore Catalog
+            </button>
           </div>
         </div>
       </Modal>

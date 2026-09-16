@@ -1,20 +1,27 @@
-import { motion, type HTMLMotionProps } from 'framer-motion';
-import { type ReactNode } from 'react';
+import React from 'react';
 
-interface GlassCardProps extends HTMLMotionProps<'div'> {
-  children: ReactNode;
-  hover?: boolean;
-  glow?: boolean;
+interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children?: React.ReactNode;
   className?: string;
+  hover?: boolean;
 }
 
-export function GlassCard({ children, hover = false, glow = false, className = '', ...rest }: GlassCardProps) {
+export function GlassCard({
+  children,
+  className = '',
+  hover = false,
+  ...props
+}: GlassCardProps) {
   return (
-    <motion.div
-      className={`glass rounded-2xl ${hover ? 'transition-all duration-300 hover:shadow-glow hover:-translate-y-1' : ''} ${glow ? 'shadow-glow' : 'shadow-glass'} ${className}`}
-      {...rest}
+    <div
+      className={`glass rounded-2xl ${
+        hover
+          ? 'hover:shadow-xl hover:-translate-y-0.5 hover:border-slate-300/80 dark:hover:border-slate-600/80 transition-all duration-300'
+          : ''
+      } ${className}`}
+      {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

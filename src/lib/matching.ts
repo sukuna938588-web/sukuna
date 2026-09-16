@@ -1,4 +1,4 @@
-import type { Student, Tutor, MatchResult, PeerMatch, MatchTier, PeerMatchBreakdownItem } from '@/types';
+import type { Student, Tutor, MatchResult, PeerMatch, MatchTier, PeerMatchBreakdownItem } from '../types';
 
 const TUTOR_WEIGHTS = {
   expertise: 0.4,
@@ -328,10 +328,10 @@ export function calculateAIPeerMatch(currentUser: Student, peer: Student): PeerM
  * Automatically filters out the current student, computes AI match scores, and sorts highest score first.
  */
 export function findPeerMatches(currentUser: Student, allStudents: Student[]): PeerMatch[] {
-  if (!allStudents || allStudents.length === 0) return [];
+  if (!allStudents || allStudents.length === 0 || !currentUser) return [];
 
   const matches = allStudents
-    .filter((s) => s.id !== currentUser.id && s.email !== currentUser.email)
+    .filter((s) => s && s.id !== currentUser.id && s.email !== currentUser.email)
     .map((peer) => calculateAIPeerMatch(currentUser, peer))
     .sort((a, b) => b.score - a.score); // Highest score first
 

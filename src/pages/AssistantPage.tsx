@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, Sparkles, User, BookOpen, Target, Calendar } from 'lucide-react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { useToast } from '@/context/ToastContext';
-import { useData } from '@/context/DataContext';
-import { tutors } from '@/data/mockData';
-import { rankMatches } from '@/lib/matching';
-import type { ChatMessage, Student } from '@/types';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useToast } from '../context/ToastContext';
+import { useData } from '../context/DataContext';
+import { tutors } from '../data/mockData';
+import { rankMatches } from '../lib/matching';
+import type { ChatMessage, Student } from '../types';
 
 const suggestedPrompts = [
   'Recommend a tutor for Machine Learning',

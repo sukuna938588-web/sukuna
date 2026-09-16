@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Search, Bell, Sun, Moon, LogOut, User, LayoutDashboard, ChevronDown } from 'lucide-react';
-import { useData } from '@/context/DataContext';
-import { useTheme } from '@/context/ThemeContext';
-import { useToast } from '@/context/ToastContext';
+import { Menu, Search, Bell, Sun, Moon, LogOut, User, LayoutDashboard, ChevronDown, Sparkles } from 'lucide-react';
+import { useData } from '../../context/DataContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useToast } from '../../context/ToastContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { StudySyncLogo } from '../brand/StudySyncLogo';
+import { BrandKitModal } from '../brand/BrandKitModal';
 
 export function Navbar({ onMenu }: { onMenu: () => void }) {
   const { notifications, markNotificationRead, markAllRead, currentUser, logout } = useData();
@@ -14,6 +16,7 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
 
   const [showNotif, setShowNotif] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showBrandKit, setShowBrandKit] = useState(false);
   const unread = notifications.filter((n) => !n.read).length;
 
   const handleLogout = () => {
@@ -30,6 +33,10 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
           <Menu className="w-5 h-5" />
         </button>
 
+        <Link to="/" className="lg:hidden flex items-center shrink-0">
+          <StudySyncLogo variant="navbar" size="sm" />
+        </Link>
+
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -40,6 +47,15 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
 
         <button onClick={toggle} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle theme">
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        </button>
+
+        <button
+          onClick={() => setShowBrandKit(true)}
+          className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-500 dark:text-indigo-400 text-xs font-semibold transition-all"
+          title="View Brand Kit & Vector Logos"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+          <span className="hidden md:inline">Brand Kit</span>
         </button>
 
         {/* Notifications */}
@@ -128,9 +144,13 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
                     <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">{currentUser?.name}</p>
                     <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{currentUser?.email}</p>
                     <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-semibold">
-                      <span>Level {currentUser?.level ?? 1}</span>
-                      <span>•</span>
-                      <span>{currentUser?.xp ?? 0} XP</span>
+                      <span>Student</span>
+                      {currentUser?.department && (
+                        <>
+                          <span>•</span>
+                          <span className="truncate max-w-[120px]">{currentUser.department}</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -151,6 +171,17 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
                       <LayoutDashboard className="w-4 h-4 text-accent-500" />
                       Dashboard
                     </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        setShowBrandKit(true);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400 transition-colors cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-cyan-400" />
+                      Brand Kit & Logos
+                    </button>
                   </div>
 
                   <div className="mt-1 pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
@@ -169,6 +200,8 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
           </AnimatePresence>
         </div>
       </div>
+
+      <BrandKitModal isOpen={showBrandKit} onClose={() => setShowBrandKit(false)} />
     </header>
   );
 }

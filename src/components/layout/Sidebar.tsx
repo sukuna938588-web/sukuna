@@ -7,6 +7,7 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useData } from '../../context/DataContext';
 import { StudySyncLogo } from '../brand/StudySyncLogo';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
 
 const nav = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -64,6 +65,10 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
               );
             })}
           </nav>
+
+          <div className="pt-2">
+            <PWAInstallButton className="w-full justify-center" variant="compact" />
+          </div>
 
           <button
             onClick={toggle}

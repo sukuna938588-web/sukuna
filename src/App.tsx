@@ -18,6 +18,9 @@ import { StudentsPage } from './pages/StudentsPage';
 import { SubjectsPage } from './pages/SubjectsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
+import { OfflineIndicator } from './components/pwa/OfflineIndicator';
+import { PWAInstallBanner } from './components/pwa/PWAInstallBanner';
+
 function App() {
   return (
     <ThemeProvider>
@@ -25,6 +28,8 @@ function App() {
         <DataProvider>
           <ErrorBoundary>
             <BrowserRouter>
+              <OfflineIndicator />
+              <PWAInstallBanner />
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LandingPage />} />

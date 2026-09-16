@@ -7,6 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { StudySyncLogo } from '../brand/StudySyncLogo';
 import { BrandKitModal } from '../brand/BrandKitModal';
+import { PWAInstallButton } from '../pwa/PWAInstallButton';
 
 export function Navbar({ onMenu }: { onMenu: () => void }) {
   const { notifications, markNotificationRead, markAllRead, currentUser, logout } = useData();
@@ -48,6 +49,8 @@ export function Navbar({ onMenu }: { onMenu: () => void }) {
         <button onClick={toggle} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Toggle theme">
           {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
+
+        <PWAInstallButton variant="nav" />
 
         <button
           onClick={() => setShowBrandKit(true)}

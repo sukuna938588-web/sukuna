@@ -13,6 +13,7 @@ import { useData } from '../context/DataContext';
 import { Sun, Moon } from 'lucide-react';
 import { StudySyncLogo } from '../components/brand/StudySyncLogo';
 import { BrandKitModal } from '../components/brand/BrandKitModal';
+import { PWAInstallButton } from '../components/pwa/PWAInstallButton';
 
 const features = [
   { icon: Brain, title: 'AI Tutor Matching', desc: 'Our engine scores tutors on expertise, availability, ratings, and compatibility to find your perfect match.' },
@@ -81,6 +82,8 @@ export function LandingPage() {
               {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
 
+            <PWAInstallButton variant="compact" />
+
             {isAuthenticated ? (
               <Link to="/dashboard" className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold shadow-glow hover:shadow-glow-cyan transition-shadow">
                 Go to Dashboard
@@ -137,6 +140,7 @@ export function LandingPage() {
               <Link to={isAuthenticated ? "/profile" : "/login"} className="px-6 py-3.5 rounded-xl glass font-semibold hover:shadow-glass transition-shadow">
                 {isAuthenticated ? "View Profile" : "Sign In to Account"}
               </Link>
+              <PWAInstallButton variant="outline" />
             </div>
             <div className="mt-8 flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
               <div className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-success-500" /> No credit card</div>

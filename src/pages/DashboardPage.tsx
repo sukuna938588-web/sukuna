@@ -23,15 +23,18 @@ import { ProgressRing } from '../components/ui/ProgressRing';
 import { RecentActivityFeed } from '../components/dashboard/RecentActivityFeed';
 import { AIDashboardWidgets } from '../components/dashboard/AIDashboardWidgets';
 import { useData } from '../context/DataContext';
-import { tutors, weeklyPerformance } from '../data/mockData';
+import { weeklyPerformance } from '../data/mockData';
 import { findPeerMatches } from '../lib/matching';
 
 export function DashboardPage() {
   const { students, subjects, sessions, notifications, currentUser, completeSession } = useData();
 
-  // Dynamic calculations derived automatically from stored data
+  // Dynamic calculations derived automatically from stored student & subject data
+  // Every student can become a tutor for subjects in their Strengths
   const totalStudents = students.length;
-  const availableTutors = tutors.length;
+  const availableTutors = useMemo(() => {
+    return students.filter((s) => s.strengths && s.strengths.length > 0).length;
+  }, [students]);
   const totalSubjects = subjects.length;
   const sessionsScheduled = sessions.filter((s) => s.status === 'scheduled').length;
   const sessionsCompleted = sessions.filter((s) => s.status === 'completed').length;

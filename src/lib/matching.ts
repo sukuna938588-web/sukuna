@@ -1,4 +1,15 @@
-import type { Student, Tutor, MatchResult, PeerMatch, MatchTier, PeerMatchBreakdownItem } from '../types';
+import type {
+  Student,
+  Tutor,
+  Subject,
+  MatchResult,
+  PeerMatch,
+  MatchTier,
+  PeerMatchBreakdownItem,
+  TutorMatch,
+  SubjectWiseMatchDetail,
+  TutorMatchBreakdownItem,
+} from '../types';
 
 const TUTOR_WEIGHTS = {
   expertise: 0.4,
@@ -66,8 +77,275 @@ export function getMatchTier(score: number): {
 /**
  * Normalizes subject names for case-insensitive matching
  */
-function normalize(str: string): string {
-  return str.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+export function normalize(str: string): string {
+  return (str || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/**
+ * Checks if a subject string matches any active subject created via Add Subject form
+ * Returns the canonical Subject from the active catalog if found, or undefined
+ */
+export function findActiveSubject(subjectStr: string, activeSubjects: Subject[]): Subject | undefined {
+  if (!subjectStr || !Array.isArray(activeSubjects) || activeSubjects.length === 0) {
+    return undefined;
+  }
+  const target = normalize(subjectStr);
+  if (!target) return undefined;
+
+  return activeSubjects.find((sub) => {
+    const normName = normalize(sub.name);
+    const normCode = normalize(sub.code);
+    return (
+      normName === target ||
+      normCode === target ||
+      (normName.length > 2 && target.length > 2 && (normName.includes(target) || target.includes(normName))) ||
+      (normCode.length > 1 && target.length > 1 && (normCode.includes(target) || target.includes(normCode)))
+    );
+  });
+}
+
+/**
+ * Returns canonical active subjects that are listed in the student's Strengths
+ */
+export function getActiveStudentStrengths(student: Student, activeSubjects: Subject[]): string[] {
+  if (!student || !Array.isArray(student.strengths)) return [];
+  const set = new Set<string>();
+  student.strengths.forEach((str) => {
+    const active = findActiveSubject(str, activeSubjects);
+    if (active) set.add(active.name);
+  });
+  return Array.from(set);
+}
+
+/**
+ * Returns canonical active subjects that are listed in the student's Weaknesses
+ */
+export function getActiveStudentWeaknesses(student: Student, activeSubjects: Subject[]): string[] {
+  if (!student) return [];
+  const set = new Set<string>();
+  const rawList = [
+    ...(Array.isArray(student.weaknesses) ? student.weaknesses : []),
+    ...(Array.isArray(student.weakSubjects) ? student.weakSubjects : []),
+  ];
+  rawList.forEach((str) => {
+    const active = findActiveSubject(str, activeSubjects);
+    if (active) set.add(active.name);
+  });
+  return Array.from(set);
+}
+
+/**
+ * Calculates real-time Tutor Matching between a learner and a student acting as tutor.
+ * 
+ * Tutor Matching Logic:
+ * - Every student can become a tutor.
+ * - A student is considered a tutor for subjects listed in their Strengths.
+ * - A student needs help for subjects listed in their Weaknesses.
+ * - Only subjects existing in the active Subjects list (Local Storage) are valid.
+ * - If a subject is deleted, related matches are immediately removed.
+ */
+export function calculateTutorMatch(
+  learner: Student,
+  tutor: Student,
+  activeSubjects: Subject[]
+): TutorMatch | null {
+  if (!learner || !tutor || learner.id === tutor.id) return null;
+
+  // Weaknesses of the learner that exist in the active subject catalog
+  const learnerWeaknesses = getActiveStudentWeaknesses(learner, activeSubjects);
+  // Strengths of the tutor that exist in the active subject catalog
+  const tutorStrengths = getActiveStudentStrengths(tutor, activeSubjects);
+
+  // Subject matching: Tutor is a tutor for subjects listed in their Strengths
+  // Learner needs help for subjects listed in their Weaknesses
+  const matchedSubjects: string[] = [];
+  tutorStrengths.forEach((ts) => {
+    if (learnerWeaknesses.some((lw) => normalize(lw) === normalize(ts))) {
+      if (!matchedSubjects.includes(ts)) {
+        matchedSubjects.push(ts);
+      }
+    }
+  });
+
+  // If no subject matches, this student cannot be recommended as a tutor for this learner
+  if (matchedSubjects.length === 0) {
+    return null;
+  }
+
+  // Reciprocal matching: learner's strengths that tutor needs help with
+  const learnerStrengths = getActiveStudentStrengths(learner, activeSubjects);
+  const tutorWeaknesses = getActiveStudentWeaknesses(tutor, activeSubjects);
+  const reciprocalSubjects: string[] = [];
+  learnerStrengths.forEach((ls) => {
+    if (tutorWeaknesses.some((tw) => normalize(tw) === normalize(ls))) {
+      if (!reciprocalSubjects.includes(ls)) {
+        reciprocalSubjects.push(ls);
+      }
+    }
+  });
+
+  // Calculate Match Score (%)
+  const coverageRatio = matchedSubjects.length / Math.max(1, learnerWeaknesses.length);
+  let baseScore = 84 + Math.round(coverageRatio * 6);
+  if (reciprocalSubjects.length > 0) {
+    baseScore += 6;
+  }
+  const learnerDept = normalize(learner.department || '');
+  const tutorDept = normalize(tutor.department || '');
+  if (learnerDept && tutorDept && (learnerDept === tutorDept || learnerDept.includes(tutorDept) || tutorDept.includes(learnerDept))) {
+    baseScore += 2;
+  }
+  if ((tutor.year || 1) >= (learner.year || 1)) {
+    baseScore += 2;
+  }
+
+  const finalScore = Math.max(65, Math.min(99, baseScore));
+  const confidence = Math.min(98, Math.round(finalScore * 0.96 + (reciprocalSubjects.length > 0 ? 3 : 0)));
+  const tierInfo = getMatchTier(finalScore);
+
+  // Why this tutor was selected
+  const whyParts: string[] = [];
+  whyParts.push(
+    `Selected as tutor for ${matchedSubjects.join(', ')}: Demonstrates verified strength in ${matchedSubjects.join(', ')} which directly matches ${learner.name}'s target weakness.`
+  );
+  if (reciprocalSubjects.length > 0) {
+    whyParts.push(
+      `Two-way mutual learning: ${learner.name} can tutor ${tutor.name} in ${reciprocalSubjects.join(', ')}.`
+    );
+  }
+  if (learner.department && tutor.department && normalize(learner.department) === normalize(tutor.department)) {
+    whyParts.push(`Shared department curriculum in ${tutor.department}.`);
+  }
+  if ((tutor.year || 1) > (learner.year || 1)) {
+    whyParts.push(`Senior student mentorship (Year ${tutor.year}).`);
+  }
+
+  const whySelected = whyParts.join(' ');
+
+  // Subject-wise matching details
+  const subjectWiseDetails: SubjectWiseMatchDetail[] = [];
+  matchedSubjects.forEach((sub) => {
+    subjectWiseDetails.push({
+      subject: sub,
+      isTutorStrength: true,
+      isLearnerWeakness: true,
+      isReciprocal: false,
+      status: 'Direct Tutor Match',
+      description: `${tutor.name} (Strength) tutors ${learner.name} (Weakness)`,
+    });
+  });
+  reciprocalSubjects.forEach((sub) => {
+    subjectWiseDetails.push({
+      subject: sub,
+      isTutorStrength: false,
+      isLearnerWeakness: false,
+      isReciprocal: true,
+      status: 'Reciprocal Exchange',
+      description: `${learner.name} (Strength) can mentor ${tutor.name} (Weakness)`,
+    });
+  });
+
+  const breakdown: TutorMatchBreakdownItem[] = [
+    {
+      label: 'Subject Coverage',
+      weight: 0.40,
+      value: Math.min(100, Math.round(coverageRatio * 100)),
+      description: `Covers ${matchedSubjects.length} of ${learnerWeaknesses.length} weak subjects (${matchedSubjects.join(', ')})`,
+    },
+    {
+      label: 'Strength Alignment',
+      weight: 0.25,
+      value: 95,
+      description: `Tutor has verified strengths in ${matchedSubjects.join(', ')}`,
+    },
+    {
+      label: 'Reciprocal Exchange',
+      weight: 0.15,
+      value: reciprocalSubjects.length > 0 ? 95 : 60,
+      description: reciprocalSubjects.length > 0
+        ? `Mutual exchange: ${learner.name} helps in ${reciprocalSubjects.join(', ')}`
+        : 'One-directional tutoring guidance',
+    },
+    {
+      label: 'Department Synergy',
+      weight: 0.10,
+      value: learnerDept === tutorDept ? 100 : 75,
+      description: learnerDept === tutorDept ? `Shared ${tutor.department} coursework` : `${tutor.department} curriculum`,
+    },
+    {
+      label: 'Academic Year Synergy',
+      weight: 0.10,
+      value: (tutor.year || 1) >= (learner.year || 1) ? 95 : 80,
+      description: `Year ${tutor.year || 1} tutor with Year ${learner.year || 1} learner`,
+    },
+  ];
+
+  return {
+    tutor,
+    learner,
+    matchedSubjects,
+    reciprocalSubjects,
+    score: finalScore,
+    confidence,
+    tier: tierInfo.tier,
+    whySelected,
+    subjectWiseDetails,
+    breakdown,
+  };
+}
+
+/**
+ * Finds and ranks all student tutors for the specified learner.
+ * Evaluates only students in allStudents and activeSubjects from Local Storage.
+ */
+export function findTutorMatches(
+  learner: Student,
+  allStudents: Student[],
+  activeSubjects: Subject[]
+): TutorMatch[] {
+  if (!learner || !allStudents || allStudents.length === 0 || !activeSubjects || activeSubjects.length === 0) {
+    return [];
+  }
+
+  const matches: TutorMatch[] = [];
+  allStudents.forEach((student) => {
+    if (student.id === learner.id || student.email === learner.email) return;
+    const match = calculateTutorMatch(learner, student, activeSubjects);
+    if (match) {
+      matches.push(match);
+    }
+  });
+
+  return matches.sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Converts a Student into a Tutor representation for scheduling & session compatibility.
+ */
+export function studentToTutor(student: Student, activeSubjects?: Subject[]): Tutor {
+  const subjectsList = activeSubjects
+    ? getActiveStudentStrengths(student, activeSubjects)
+    : (student.strengths || []);
+
+  return {
+    id: student.id,
+    name: student.name,
+    title: `Student Tutor (Year ${student.year || 1})`,
+    email: student.email,
+    avatar: student.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(student.name)}`,
+    department: student.department || 'General Engineering',
+    subjects: subjectsList.length > 0 ? subjectsList : (student.strengths || ['General']),
+    expertise: (student.strengths || []).map((s) => ({ subject: s, rating: 90 })),
+    rating: student.rating || 4.9,
+    reviewCount: 12,
+    successRate: 94,
+    sessionsCompleted: 15,
+    availability: student.availability || [],
+    hourlyRate: 0,
+    bio: student.bio || `Student tutor specializing in ${subjectsList.join(', ') || 'coursework'}.`,
+    badges: ['Peer Tutor', 'Subject Strong'],
+    reviews: [],
+  };
 }
 
 /**

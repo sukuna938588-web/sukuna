@@ -15,7 +15,6 @@ import {
   List,
   X,
   AlertTriangle,
-  RotateCcw,
   Check,
   CheckCircle2,
   GraduationCap,
@@ -24,7 +23,6 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { Modal } from '../components/ui/Modal';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
-import { sampleSubjects } from '../data/mockData';
 import type { Subject } from '../types';
 
 const COMMON_DEPARTMENTS = [
@@ -96,9 +94,6 @@ export function SubjectsPage() {
 
   // Delete confirmation modal state
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
-
-  // Reset confirmation modal state
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   // Derive dynamic list of all departments from current subjects + common departments
   const allDepartments = useMemo(() => {
@@ -289,19 +284,6 @@ export function SubjectsPage() {
     setSubjectToDelete(null);
   };
 
-  // Confirm Reset
-  const handleResetCatalog = () => {
-    // Overwrite with original sample subjects
-    sampleSubjects.forEach((sub) => {
-      const exists = subjects.some((s) => s.id === sub.id || s.code === sub.code);
-      if (!exists) {
-        addSubject(sub);
-      }
-    });
-    notify('Catalog restored with standard curriculum subjects', 'success');
-    setIsResetModalOpen(false);
-  };
-
   return (
     <div className="space-y-7 pb-20">
       {/* Top Banner & Title Section */}
@@ -322,15 +304,6 @@ export function SubjectsPage() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <button
-            onClick={() => setIsResetModalOpen(true)}
-            title="Reset catalog to default courses"
-            className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-xs font-medium text-slate-600 dark:text-slate-300 transition-all flex items-center gap-1.5 shadow-xs"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Reset Defaults</span>
-          </button>
-
           <button
             onClick={handleOpenAdd}
             className="px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2 shadow-sm hover:shadow active:scale-[0.98]"
@@ -528,7 +501,8 @@ export function SubjectsPage() {
       </GlassCard>
 
       {/* Main Content: Card Grid View or Data Table View */}
-      {viewMode === 'grid' ? (
+      {subjects.length > 0 && filteredSubjects.length > 0 && (
+        viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <AnimatePresence>
             {filteredSubjects.map((sub, i) => {
@@ -707,10 +681,30 @@ export function SubjectsPage() {
             </table>
           </div>
         </GlassCard>
-      )}
+      ))}
 
       {/* Empty States */}
-      {filteredSubjects.length === 0 && (
+      {subjects.length === 0 ? (
+        <GlassCard className="p-12 text-center border border-slate-200/80 dark:border-slate-800/80">
+          <div className="w-12 h-12 mx-auto mb-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <BookOpen className="w-6 h-6" />
+          </div>
+          <h3 className="font-display font-bold text-base text-slate-900 dark:text-slate-100">
+            No subjects added yet. Click Add Subject to create one.
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+            No subjects added yet. Click Add Subject to create one.
+          </p>
+          <div className="mt-4 flex items-center justify-center gap-2">
+            <button
+              onClick={handleOpenAdd}
+              className="px-4 py-2 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Add Subject
+            </button>
+          </div>
+        </GlassCard>
+      ) : filteredSubjects.length === 0 ? (
         <GlassCard className="p-12 text-center border border-slate-200/80 dark:border-slate-800/80">
           <div className="w-12 h-12 mx-auto mb-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
             <BookOpen className="w-6 h-6" />
@@ -719,9 +713,7 @@ export function SubjectsPage() {
             No subjects match your query
           </h3>
           <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            {hasActiveFilters
-              ? 'Try adjusting or clearing your active filters to see all available academic subjects.'
-              : 'Your curriculum directory is currently empty. Click "Add Subject" to register courses.'}
+            Try adjusting or clearing your active filters to see all available academic subjects.
           </p>
           <div className="mt-4 flex items-center justify-center gap-2">
             {hasActiveFilters && (
@@ -736,11 +728,11 @@ export function SubjectsPage() {
               onClick={handleOpenAdd}
               className="px-3.5 py-1.5 rounded-xl bg-primary-500 text-white text-xs font-semibold hover:bg-primary-600 transition-colors flex items-center gap-1.5"
             >
-              <Plus className="w-3.5 h-3.5" /> Add New Subject
+              <Plus className="w-3.5 h-3.5" /> Add Subject
             </button>
           </div>
         </GlassCard>
-      )}
+      ) : null}
 
       {/* ========================================================================= */}
       {/* 1 & 2 & 3. ADD / EDIT SUBJECT MODAL FORM (Apple + Stripe style) */}
@@ -994,51 +986,6 @@ export function SubjectsPage() {
             >
               <Trash2 className="w-3.5 h-3.5" />
               Delete Course
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* ========================================================================= */}
-      {/* 5. RESET CATALOG CONFIRMATION MODAL */}
-      {/* ========================================================================= */}
-      <Modal
-        open={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        maxWidth="max-w-md"
-        title="Restore Default Catalog"
-      >
-        <div className="space-y-4">
-          <div className="flex items-start gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
-              <RotateCcw className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-800 dark:text-slate-200">
-                Restore the default academic subjects?
-              </p>
-              <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                This will re-add all standard curriculum subjects (Data Structures, Algorithms,
-                Databases, Machine Learning, Web Development, etc.) with pre-configured credit values.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5">
-            <button
-              type="button"
-              onClick={() => setIsResetModalOpen(false)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleResetCatalog}
-              className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              Restore Catalog
             </button>
           </div>
         </div>

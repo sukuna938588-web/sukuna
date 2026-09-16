@@ -138,6 +138,35 @@ export interface PeerMatchBreakdownItem {
 
 export type MatchTier = 'Perfect Match' | 'Excellent Match' | 'Good Match' | 'Basic Match';
 
+export interface TutorMatchBreakdownItem {
+  label: string;
+  weight: number;
+  value: number;
+  description: string;
+}
+
+export interface SubjectWiseMatchDetail {
+  subject: string;
+  isTutorStrength: boolean;
+  isLearnerWeakness: boolean;
+  isReciprocal: boolean;
+  status: 'Direct Tutor Match' | 'Reciprocal Exchange' | 'General Curriculum';
+  description: string;
+}
+
+export interface TutorMatch {
+  tutor: Student;
+  learner: Student;
+  matchedSubjects: string[]; // subjects tutor has in strengths that learner has in weaknesses (filtered by active subjects)
+  reciprocalSubjects: string[]; // subjects learner has in strengths that tutor has in weaknesses (filtered by active subjects)
+  score: number; // Match Score (%) e.g. 70-98%
+  confidence: number;
+  tier: MatchTier;
+  whySelected: string; // "Why this tutor was selected"
+  subjectWiseDetails: SubjectWiseMatchDetail[];
+  breakdown: TutorMatchBreakdownItem[];
+}
+
 export interface PeerMatch {
   student: Student;
   matchedSubjects: string[]; // subjects peer is strong in that user needs help with

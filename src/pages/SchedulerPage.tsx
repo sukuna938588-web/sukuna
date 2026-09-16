@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalIcon, Clock, Check, X, Video,
 import { GlassCard } from '../components/ui/GlassCard';
 import { useToast } from '../context/ToastContext';
 import { useData } from '../context/DataContext';
-import { tutors } from '../data/mockData';
+import { studentToTutor } from '../lib/matching';
 import type { Session } from '../types';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -13,15 +13,26 @@ const TIME_SLOTS = ['09:00','10:30','12:00','14:00','15:30','17:00','18:30'];
 
 export function SchedulerPage() {
   const { notify } = useToast();
-  const { sessions, addSession, cancelSession, completeSession, currentUser } = useData();
+  const { sessions, addSession, cancelSession, completeSession, currentUser, students, subjects } = useData();
   const [cursor, setCursor] = useState(new Date(2026, 8, 1));
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date(2026, 8, 2));
-  const [selectedTutor, setSelectedTutor] = useState(tutors[0].id);
+
+  const availableTutors = useMemo(() => {
+    return students.map((s) => studentToTutor(s, subjects));
+  }, [students, subjects]);
+
+  const [selectedTutorId, setSelectedTutorId] = useState<string>('');
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [mode, setMode] = useState<'online' | 'in-person'>('online');
   const [confirming, setConfirming] = useState(false);
 
-  const tutor = tutors.find((t) => t.id === selectedTutor) || tutors[0];
+  const tutor = useMemo(() => {
+    if (selectedTutorId) {
+      const found = availableTutors.find((t) => t.id === selectedTutorId);
+      if (found) return found;
+    }
+    return availableTutors[0] || null;
+  }, [availableTutors, selectedTutorId]);
 
   const monthGrid = useMemo(() => {
     const year = cursor.getFullYear();
@@ -50,7 +61,7 @@ export function SchedulerPage() {
   };
 
   const finalizeBooking = () => {
-    if (!selectedDate || !selectedSlot) return;
+    if (!selectedDate || !selectedSlot || !tutor) return;
     const dateStr = selectedDate.toISOString().slice(0, 10);
     const start = selectedSlot;
     const endH = parseInt(start.slice(0, 2)) + 1;
@@ -61,7 +72,7 @@ export function SchedulerPage() {
       studentName: currentUser.name,
       tutorId: tutor.id,
       tutorName: tutor.name,
-      subject: tutor.subjects[0],
+      subject: tutor.subjects[0] || 'General Session',
       date: dateStr,
       startTime: start,
       endTime: end,
@@ -128,15 +139,23 @@ export function SchedulerPage() {
             <h2 className="font-display font-semibold text-lg mb-4">Book a Session</h2>
 
             <label className="text-xs font-medium text-slate-500">Select Tutor</label>
-            <select
-              value={selectedTutor}
-              onChange={(e) => setSelectedTutor(e.target.value)}
-              className="w-full mt-1 mb-4 px-3 py-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-sm border border-transparent focus:border-primary-500/40 focus:outline-none"
-            >
-              {tutors.map((t) => (
-                <option key={t.id} value={t.id}>{t.name} — {t.subjects[0]}</option>
-              ))}
-            </select>
+            {availableTutors.length === 0 ? (
+              <div className="mt-1 mb-4 p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-700">
+                No students added yet. Add students to enable tutor booking.
+              </div>
+            ) : (
+              <select
+                value={tutor ? tutor.id : ''}
+                onChange={(e) => setSelectedTutorId(e.target.value)}
+                className="w-full mt-1 mb-4 px-3 py-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-sm border border-transparent focus:border-primary-500/40 focus:outline-none"
+              >
+                {availableTutors.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} — {t.subjects[0] || 'Student Tutor'}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <label className="text-xs font-medium text-slate-500">Selected Date</label>
             <div className="mt-1 mb-4 p-3 rounded-xl glass text-sm font-medium">
@@ -254,8 +273,8 @@ export function SchedulerPage() {
               <p className="text-sm text-slate-500 text-center mb-5">Review the details before confirming.</p>
               <div className="space-y-2 mb-5">
                 {[
-                  ['Tutor', tutor.name],
-                  ['Subject', tutor.subjects[0]],
+                  ['Tutor', tutor?.name || 'Student Tutor'],
+                  ['Subject', tutor?.subjects[0] || 'Study Session'],
                   ['Date', selectedDate.toLocaleDateString('en', { weekday: 'short', month: 'long', day: 'numeric' })],
                   ['Time', `${selectedSlot} – ${String(parseInt(selectedSlot.slice(0,2))+1).padStart(2,'0')}:30`],
                   ['Mode', mode],

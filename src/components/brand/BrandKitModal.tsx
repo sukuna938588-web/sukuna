@@ -37,7 +37,7 @@ export const BrandKitModal: React.FC<BrandKitModalProps> = ({ isOpen, onClose })
       notify('SVG vector code copied to clipboard!', 'success');
       setTimeout(() => setCopiedKey(null), 2500);
     } catch {
-      notify('Could not copy SVG code directly.', 'warning');
+      notify('Could not copy SVG code directly.', 'error');
     }
   };
 

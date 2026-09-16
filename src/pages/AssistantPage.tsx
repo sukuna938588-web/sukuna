@@ -1,45 +1,56 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, Sparkles, User, BookOpen, Target, Calendar } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { useToast } from '../context/ToastContext';
 import { useData } from '../context/DataContext';
-import { tutors } from '../data/mockData';
-import { rankMatches } from '../lib/matching';
-import type { ChatMessage, Student } from '../types';
+import { findTutorMatches } from '../lib/matching';
+import type { ChatMessage, Student, TutorMatch } from '../types';
 
 const suggestedPrompts = [
-  'Recommend a tutor for Machine Learning',
+  'Recommend a tutor for my weak subjects',
   'Which subjects should I focus on?',
   'How do I improve my learning streak?',
   'Suggest a study plan for this week',
 ];
 
-function generateReply(prompt: string, user: Student): string {
+function generateReply(prompt: string, user: Student, matches: TutorMatch[]): string {
   const p = prompt.toLowerCase();
-  const matches = rankMatches(user, tutors);
 
   if (p.includes('tutor') || p.includes('recommend')) {
-    const top = matches[0];
-    return `Based on your weak subjects (${user.weakSubjects.join(', ')}), I recommend **${top.tutor.name}** with a ${top.score}% match score. They specialize in ${top.tutor.subjects.join(' and ')}, with a ${top.tutor.rating.toFixed(1)}★ rating and ${top.tutor.successRate}% success rate. ${top.reasons[0]}. You can book a session from the Tutor Matching page.`;
+    if (matches.length > 0) {
+      const top = matches[0];
+      return `Based on your weak subjects, I recommend **${top.tutor.name}** with a **${top.score}%** match score. They demonstrate verified strength in **${top.matchedSubjects.join(', ')}**. ${top.whySelected} You can book a session from the Tutor Matching page.`;
+    }
+    return `No suitable tutor found yet. As students are created with strengths matching your weak subjects, personalized recommendations will appear here automatically.`;
   }
   if (p.includes('subject') || p.includes('focus')) {
-    return `Looking at your skill profile, your strongest area is **${[...user.skills].sort((a,b)=>b.rating-a.rating)[0].subject}** (${[...user.skills].sort((a,b)=>b.rating-a.rating)[0].rating}%). I'd recommend focusing on **${user.weakSubjects[0]}** and **${user.weakSubjects[1]}** — these have the most room for growth and will unlock new badges.`;
+    const weakList = user.weaknesses && user.weaknesses.length > 0 ? user.weaknesses : (user.weakSubjects || []);
+    if (weakList.length > 0) {
+      return `Looking at your curriculum profile, I recommend focusing on **${weakList.join(' and ')}** — improving these subjects will directly strengthen your academic standing and unlock new peer matches.`;
+    }
+    return `You have no weak subjects flagged! You can add subjects or update your student profile anytime to set target learning goals.`;
   }
   if (p.includes('streak')) {
-    return `You're on a ${user.streak}-day streak — great work! To keep it going: book at least one session every day, even a short 30-min review counts, and enable session reminders from the notifications panel. A 30-day streak unlocks the Month Master badge.`;
+    return `You're on a ${user.streak || 1}-day streak — great work! To keep it going: schedule at least one review or study session, practice core problem sets, and log your progress. Consistent study habit unlocks achievement badges.`;
   }
   if (p.includes('plan') || p.includes('week') || p.includes('study')) {
-    return `Here's a suggested plan for this week:\n\n• **Mon–Tue**: ML session with ${matches[0].tutor.name}\n• **Wed**: Review Data Structures notes\n• **Thu**: OS session with ${matches[1].tutor.name}\n• **Fri**: Group study on Databases\n• **Sat**: Practice problems + quiz\n• **Sun**: Light review + rest\n\nThis balances your weak subjects and keeps your streak active.`;
+    const tutorName = matches[0]?.tutor?.name || 'a peer study group';
+    return `Here's a suggested study plan for this week:\n\n• **Mon–Tue**: Targeted review session with ${tutorName}\n• **Wed**: Practice conceptual problems\n• **Thu**: Deep-dive review on weak areas\n• **Fri**: Group study & discussion\n• **Sat**: Self-assessment quiz\n• **Sun**: Rest & recap\n\nThis balances your weak subjects and keeps your learning streak active.`;
   }
-  return `I can help with tutor recommendations, subject suggestions, study plans, and session guidance. Try asking "Recommend a tutor for Machine Learning" or "Which subjects should I focus on?"`;
+  return `I can help with tutor recommendations, subject suggestions, study plans, and session guidance. Try asking "Recommend a tutor for my weak subjects" or "Which subjects should I focus on?"`;
 }
 
 export function AssistantPage() {
   const { notify } = useToast();
-  const { currentUser } = useData();
+  const { currentUser, students, subjects } = useData();
+
+  const tutorMatches = useMemo(() => {
+    return findTutorMatches(currentUser, students, subjects);
+  }, [currentUser, students, subjects]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 'init', role: 'assistant', content: `Hi ${currentUser.name.split(' ')[0]}! I'm your StudySync AI assistant. I can recommend tutors, suggest subjects to focus on, and help plan your study week. What would you like to know?`, time: 'now' },
+    { id: 'init', role: 'assistant', content: `Hi ${currentUser.name.split(' ')[0]}! I'm your StudySync AI assistant. I can recommend student tutors, suggest subjects to focus on, and help plan your study week. What would you like to know?`, time: 'now' },
   ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -56,13 +67,13 @@ export function AssistantPage() {
     setInput('');
     setTyping(true);
     setTimeout(() => {
-      const reply: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content: generateReply(text, currentUser), time: 'now' };
+      const reply: ChatMessage = { id: `a-${Date.now()}`, role: 'assistant', content: generateReply(text, currentUser, tutorMatches), time: 'now' };
       setMessages((m) => [...m, reply]);
       setTyping(false);
-    }, 900);
+    }, 800);
   };
 
-  const topMatches = rankMatches(currentUser, tutors).slice(0, 3);
+  const topMatches = tutorMatches.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -150,16 +161,24 @@ export function AssistantPage() {
           <GlassCard className="p-5">
             <h3 className="font-display font-semibold text-sm mb-3 flex items-center gap-2"><Target className="w-4 h-4 text-primary-500" /> Top Tutor Recommendations</h3>
             <div className="space-y-3">
-              {topMatches.map((m) => (
-                <div key={m.tutor.id} className="flex items-center gap-3">
-                  <img src={m.tutor.avatar} alt="" className="w-9 h-9 rounded-lg bg-slate-200" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{m.tutor.name}</p>
-                    <p className="text-xs text-slate-500">{m.tutor.subjects[0]}</p>
-                  </div>
-                  <span className="text-sm font-bold text-primary-500">{m.score}%</span>
+              {topMatches.length === 0 ? (
+                <div className="py-4 text-center text-xs text-slate-400">
+                  {students.length === 0
+                    ? 'Add students to start tutor matching.'
+                    : 'No suitable tutor found yet.'}
                 </div>
-              ))}
+              ) : (
+                topMatches.map((m) => (
+                  <div key={m.tutor.id} className="flex items-center gap-3">
+                    <img src={m.tutor.avatar} alt="" className="w-9 h-9 rounded-lg bg-slate-200 object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{m.tutor.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{m.matchedSubjects.join(', ')}</p>
+                    </div>
+                    <span className="text-sm font-bold text-primary-500">{m.score}%</span>
+                  </div>
+                ))
+              )}
             </div>
           </GlassCard>
 

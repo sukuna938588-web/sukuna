@@ -14,24 +14,24 @@ import {
   Calendar,
   ChevronRight,
   Target,
+  GraduationCap,
 } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { Counter } from '../ui/Counter';
 import { ProgressRing } from '../ui/ProgressRing';
 import { useData } from '../../context/DataContext';
-import { tutors } from '../../data/mockData';
 import {
   calculateAIDashboardScores,
   calculateAILearningInsights,
-  calculateSmartAITutorRecommendations,
   generateAIStudyPlan,
 } from '../../lib/aiEngine';
+import { findTutorMatches, studentToTutor } from '../../lib/matching';
 import { AIStudyPlannerModal } from '../ai/AIStudyPlannerModal';
 import { AITutorDetailModal } from '../ai/AITutorDetailModal';
 import type { AITutorRecommendation } from '../../types';
 
 export function AIDashboardWidgets() {
-  const { currentUser, sessions } = useData();
+  const { currentUser, sessions, students, subjects } = useData();
 
   const [isStudyPlannerOpen, setIsStudyPlannerOpen] = useState(false);
   const [selectedTutorRec, setSelectedTutorRec] = useState<AITutorRecommendation | null>(null);
@@ -47,18 +47,31 @@ export function AIDashboardWidgets() {
     [currentUser, sessions]
   );
 
-  const tutorRecs = useMemo(
-    () => calculateSmartAITutorRecommendations(currentUser, tutors),
-    [currentUser]
+  const tutorMatches = useMemo(
+    () => findTutorMatches(currentUser, students, subjects),
+    [currentUser, students, subjects]
   );
+
+  const top3Tutors: AITutorRecommendation[] = useMemo(() => {
+    return tutorMatches.slice(0, 3).map((m) => ({
+      tutor: studentToTutor(m.tutor, subjects),
+      score: m.score,
+      confidence: m.confidence,
+      tier: m.tier,
+      whyRecommended: m.whySelected,
+      matchedWeakSubjects: m.matchedSubjects,
+      departmentSynergy: m.tutor.department,
+      yearSynergy: `Year ${m.tutor.year || 1} Tutor`,
+      learningStyleFit: 'High Student Compatibility',
+      keyStrengths: m.matchedSubjects,
+      breakdown: m.breakdown,
+    }));
+  }, [tutorMatches, subjects]);
 
   const weeklyPlan = useMemo(
     () => generateAIStudyPlan(currentUser, sessions, 'balanced'),
     [currentUser, sessions]
   );
-
-
-  const top3Tutors = tutorRecs.slice(0, 3);
   const topWeakSubject = aiInsights.weakestSubjects[0];
 
   return (
@@ -411,47 +424,63 @@ export function AIDashboardWidgets() {
               </div>
 
               <div className="space-y-3">
-                {top3Tutors.map((rec) => (
-                  <div
-                    key={rec.tutor.id}
-                    onClick={() => setSelectedTutorRec(rec)}
-                    className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 hover:bg-slate-100/90 dark:hover:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer group hover:border-primary-500/40"
-                  >
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={rec.tutor.avatar}
-                        alt={rec.tutor.name}
-                        className="w-11 h-11 rounded-xl object-cover ring-2 ring-primary-500/30 group-hover:ring-primary-500 transition-all"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate group-hover:text-primary-500 transition-colors">
-                            {rec.tutor.name}
-                          </h4>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            {rec.confidence}% Match
-                          </span>
+                {top3Tutors.length === 0 ? (
+                  <div className="py-8 px-4 text-center rounded-2xl bg-slate-50/50 dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-700">
+                    <GraduationCap className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {students.length === 0
+                        ? 'Add students to start tutor matching.'
+                        : 'No suitable tutor found yet.'}
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {students.length === 0
+                        ? 'Create student profiles to calculate AI matches.'
+                        : 'Tutors appear when student strengths align with your target weaknesses.'}
+                    </p>
+                  </div>
+                ) : (
+                  top3Tutors.map((rec) => (
+                    <div
+                      key={rec.tutor.id}
+                      onClick={() => setSelectedTutorRec(rec)}
+                      className="p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 hover:bg-slate-100/90 dark:hover:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 transition-all cursor-pointer group hover:border-primary-500/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={rec.tutor.avatar}
+                          alt={rec.tutor.name}
+                          className="w-11 h-11 rounded-xl object-cover ring-2 ring-primary-500/30 group-hover:ring-primary-500 transition-all"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-xs text-slate-900 dark:text-slate-100 truncate group-hover:text-primary-500 transition-colors">
+                              {rec.tutor.name}
+                            </h4>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                              {rec.confidence}% Match
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                            {rec.tutor.department} · {rec.tutor.rating.toFixed(1)}★ ({rec.tutor.reviewCount} reviews)
+                          </p>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                          {rec.tutor.department} · {rec.tutor.rating.toFixed(1)}★ ({rec.tutor.reviewCount} reviews)
-                        </p>
+                      </div>
+
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-2 line-clamp-2 leading-relaxed bg-white/50 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200/40 dark:border-slate-700/40">
+                        💡 {rec.whyRecommended}
+                      </p>
+
+                      <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="text-primary-600 dark:text-primary-400 font-semibold truncate max-w-[170px]">
+                          Focus: {rec.matchedWeakSubjects.join(', ') || rec.tutor.subjects[0]}
+                        </span>
+                        <span className="text-slate-500 group-hover:text-primary-500 flex items-center gap-0.5 font-medium transition-colors">
+                          Inspect <ChevronRight className="w-3 h-3" />
+                        </span>
                       </div>
                     </div>
-
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-2 line-clamp-2 leading-relaxed bg-white/50 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200/40 dark:border-slate-700/40">
-                      💡 {rec.whyRecommended}
-                    </p>
-
-                    <div className="mt-2.5 flex items-center justify-between text-[10px] text-slate-400">
-                      <span className="text-primary-600 dark:text-primary-400 font-semibold truncate max-w-[170px]">
-                        Focus: {rec.matchedWeakSubjects.join(', ') || rec.tutor.subjects[0]}
-                      </span>
-                      <span className="text-slate-500 group-hover:text-primary-500 flex items-center gap-0.5 font-medium transition-colors">
-                        Inspect <ChevronRight className="w-3 h-3" />
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 

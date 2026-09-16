@@ -128,7 +128,7 @@ export const StudySyncLogo: React.FC<StudySyncLogoProps> = ({
           </span>
         </div>
 
-        {(showTagline || variant === 'hero') && (
+        {showTagline && (
           <div className="mt-2 flex flex-col items-center">
             <span
               className={`font-sans text-[10px] sm:text-xs font-semibold tracking-[0.22em] uppercase ${taglineColor}`}

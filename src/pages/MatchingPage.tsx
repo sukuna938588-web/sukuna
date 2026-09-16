@@ -22,19 +22,33 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { ProgressRing } from '../components/ui/ProgressRing';
 import { useToast } from '../context/ToastContext';
 import { useData } from '../context/DataContext';
-import { tutors } from '../data/mockData';
 import {
   findPeerMatches,
+  findTutorMatches,
+  studentToTutor,
   getMatchTier,
-  getStudentWeakSubjects,
+  getActiveStudentWeaknesses,
+  getActiveStudentStrengths,
 } from '../lib/matching';
-import { calculateSmartAITutorRecommendations } from '../lib/aiEngine';
 import { AITutorDetailModal } from '../components/ai/AITutorDetailModal';
-import type { PeerMatch, AITutorRecommendation } from '../types';
+import type { PeerMatch, AITutorRecommendation, Student, TutorMatch } from '../types';
 
 export function MatchingPage() {
   const { notify } = useToast();
-  const { students, currentUser, createSession } = useData();
+  const { students, subjects, currentUser, createSession } = useData();
+
+  // Selected student learner ID (for viewing matches for specific student or current user)
+  const [selectedLearnerId, setSelectedLearnerId] = useState<string>('');
+
+  const activeLearner: Student = useMemo(() => {
+    if (selectedLearnerId) {
+      const found = students.find((s) => s.id === selectedLearnerId);
+      if (found) return found;
+    }
+    const matchUser = students.find((s) => s.id === currentUser.id || s.email === currentUser.email);
+    if (matchUser) return matchUser;
+    return students[0] || currentUser;
+  }, [students, selectedLearnerId, currentUser]);
 
   // Mode: AI Tutor Recommendations vs AI Peer Matches
   const [matchingMode, setMatchingMode] = useState<'tutors' | 'peers'>('tutors');
@@ -62,20 +76,46 @@ export function MatchingPage() {
   const [bookingTopic, setBookingTopic] = useState('');
   const [isBooking, setIsBooking] = useState(false);
 
-  // Dynamic user strong & weak subjects
-  const userWeakSubjects = useMemo(() => getStudentWeakSubjects(currentUser), [currentUser]);
+  // Dynamic user strong & weak subjects based on active subjects
+  const userWeakSubjects = useMemo(
+    () => getActiveStudentWeaknesses(activeLearner, subjects),
+    [activeLearner, subjects]
+  );
+  const userStrongSubjects = useMemo(
+    () => getActiveStudentStrengths(activeLearner, subjects),
+    [activeLearner, subjects]
+  );
 
-  // Compute Smart AI Tutor Recommendations
-  const allTutorRecommendations = useMemo(() => {
-    return calculateSmartAITutorRecommendations(currentUser, tutors);
-  }, [currentUser]);
+  // Compute Smart AI Tutor Matches using real students and active subjects
+  // Every student can become a tutor. A student is a tutor for subjects in Strengths.
+  // A student needs help for subjects in Weaknesses.
+  const allTutorMatches: TutorMatch[] = useMemo(() => {
+    return findTutorMatches(activeLearner, students, subjects);
+  }, [activeLearner, students, subjects]);
+
+  // Adapt TutorMatch to AITutorRecommendation format for seamless modal/detail compatibility
+  const allTutorRecommendations: AITutorRecommendation[] = useMemo(() => {
+    return allTutorMatches.map((m) => ({
+      tutor: studentToTutor(m.tutor, subjects),
+      score: m.score,
+      confidence: m.confidence,
+      tier: m.tier,
+      whyRecommended: m.whySelected,
+      matchedWeakSubjects: m.matchedSubjects,
+      departmentSynergy: m.tutor.department,
+      yearSynergy: `Year ${m.tutor.year || 1} Peer Mentor`,
+      learningStyleFit: 'Peer Study Synergy',
+      keyStrengths: m.matchedSubjects,
+      breakdown: m.breakdown,
+    }));
+  }, [allTutorMatches, subjects]);
 
   // Compute all AI Peer Matches sorted highest score first
   const allPeerMatches = useMemo(() => {
-    return findPeerMatches(currentUser, students);
-  }, [currentUser, students]);
+    return findPeerMatches(activeLearner, students);
+  }, [activeLearner, students]);
 
-  // Filtered Tutor Recommendations
+  // Filtered Tutor Matches & Recommendations
   const filteredTutors = useMemo(() => {
     return allTutorRecommendations.filter((rec) => {
       const q = query.trim().toLowerCase();
@@ -96,17 +136,16 @@ export function MatchingPage() {
     });
   }, [allTutorRecommendations, query, selectedTier, selectedSubject]);
 
-  // Extract all available subjects across tutor & peer strengths for filtering
+  // Extract all available subjects across active subjects and matched subjects
   const allSubjects = useMemo(() => {
     const set = new Set<string>();
-    allTutorRecommendations.forEach((r) => {
-      r.tutor.subjects.forEach((s) => set.add(s));
-    });
-    allPeerMatches.forEach((m) => {
-      m.strongSubjects.forEach((s) => set.add(s));
+    subjects.forEach((s) => set.add(s.name));
+    allTutorMatches.forEach((m) => {
+      m.matchedSubjects.forEach((s) => set.add(s));
+      (m.tutor.strengths || []).forEach((s) => set.add(s));
     });
     return Array.from(set).sort();
-  }, [allTutorRecommendations, allPeerMatches]);
+  }, [subjects, allTutorMatches]);
 
   // Filter matches based on search query, tier filter, subject filter, and reciprocal toggle
   const filteredMatches = useMemo(() => {
@@ -215,24 +254,43 @@ export function MatchingPage() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
             <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
+              src={activeLearner.avatar}
+              alt={activeLearner.name}
               className="w-12 h-12 rounded-2xl bg-slate-200 object-cover ring-2 ring-primary-500/30 shrink-0"
             />
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-display font-bold text-base text-slate-900 dark:text-slate-100">
-                  {currentUser.name}
-                </span>
+                {students.length > 1 ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      Finding Tutors For:
+                    </span>
+                    <select
+                      value={activeLearner.id}
+                      onChange={(e) => setSelectedLearnerId(e.target.value)}
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 border border-primary-500/30 text-primary-600 dark:text-primary-400 focus:outline-none cursor-pointer"
+                    >
+                      {students.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.department})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <span className="font-display font-bold text-base text-slate-900 dark:text-slate-100">
+                    {activeLearner.name}
+                  </span>
+                )}
                 <span className="text-xs px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
-                  {currentUser.department}
+                  {activeLearner.department}
                 </span>
                 <span className="text-xs px-2 py-0.5 rounded-md bg-primary-500/10 text-primary-600 dark:text-primary-400 font-semibold">
-                  Year {currentUser.year}
+                  Year {activeLearner.year || 1}
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                AI calculations adapt live to your skills, weak areas, and learning preferences.
+                Every student can become a tutor for their Strengths, and gets matched for their Weaknesses.
               </p>
             </div>
           </div>
@@ -240,7 +298,7 @@ export function MatchingPage() {
           <div className="flex flex-wrap gap-4 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200/60 dark:border-slate-800/60 text-xs">
             <div>
               <span className="text-slate-400 font-medium block text-[11px] mb-1">
-                Your Priority Weak Subjects (Target):
+                Weaknesses (Needs Help In):
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {userWeakSubjects.length > 0 ? (
@@ -253,25 +311,27 @@ export function MatchingPage() {
                     </span>
                   ))
                 ) : (
-                  <span className="text-slate-400 italic">No weak subjects set</span>
+                  <span className="text-slate-400 italic">No weaknesses added</span>
                 )}
               </div>
             </div>
 
             <div>
               <span className="text-slate-400 font-medium block text-[11px] mb-1">
-                Learning Preferences:
+                Strengths (Can Tutor Others In):
               </span>
               <div className="flex flex-wrap gap-1.5">
-                {(currentUser.learningPreferences || ['Visual Learning', 'Interactive Practice']).map(
-                  (p) => (
+                {userStrongSubjects.length > 0 ? (
+                  userStrongSubjects.map((s) => (
                     <span
-                      key={p}
-                      className="px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-medium text-[11px]"
+                      key={s}
+                      className="px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]"
                     >
-                      {p}
+                      {s}
                     </span>
-                  )
+                  ))
+                ) : (
+                  <span className="text-slate-400 italic">No strengths added</span>
                 )}
               </div>
             </div>
@@ -538,12 +598,30 @@ export function MatchingPage() {
       {matchingMode === 'tutors' ? (
         /* SMART AI TUTOR RECOMMENDATIONS VIEW */
         <div>
-          {filteredTutors.length === 0 ? (
+          {students.length === 0 ? (
             <GlassCard className="p-12 text-center">
-              <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="font-display font-semibold text-lg">No recommended tutors found</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Try resetting your filters or updating your weak subjects.
+              <GraduationCap className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <h3 className="font-display font-semibold text-lg text-slate-900 dark:text-slate-100">
+                Add students to start tutor matching.
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                Every student created through the Add Student form can become a tutor for their strengths.
+              </p>
+              <Link
+                to="/students"
+                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-semibold shadow-glow hover:opacity-95 transition-all"
+              >
+                Add Student
+              </Link>
+            </GlassCard>
+          ) : filteredTutors.length === 0 ? (
+            <GlassCard className="p-12 text-center">
+              <GraduationCap className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <h3 className="font-display font-semibold text-lg text-slate-900 dark:text-slate-100">
+                No suitable tutor found yet.
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                A student is considered a tutor for subjects listed in their Strengths and needs help for subjects listed in their Weaknesses. Add more students or update student profiles to establish matches.
               </p>
               <button
                 onClick={() => {
@@ -551,7 +629,7 @@ export function MatchingPage() {
                   setSelectedTier('all');
                   setSelectedSubject('all');
                 }}
-                className="mt-4 px-4 py-2 rounded-xl bg-primary-500 text-white text-xs font-semibold"
+                className="mt-4 px-4 py-2 rounded-xl bg-primary-500 text-white text-xs font-semibold cursor-pointer hover:bg-primary-600 transition-colors"
               >
                 Reset Filters
               </button>
@@ -560,6 +638,7 @@ export function MatchingPage() {
             <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredTutors.map((rec, i) => {
                 const tier = getMatchTier(rec.score);
+                const tutorMatch = allTutorMatches.find((m) => m.tutor.id === rec.tutor.id);
 
                 return (
                   <motion.div
@@ -585,7 +664,7 @@ export function MatchingPage() {
                                 </h3>
                               </div>
                               <p className="text-xs text-slate-500 font-medium">
-                                {rec.tutor.department} · {rec.tutor.title || 'Peer Tutor'}
+                                {rec.tutor.department} · Year {tutorMatch?.tutor.year || rec.tutor.title || 1} Student Tutor
                               </p>
                               <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
                                 <span className="flex items-center gap-1 text-warning-500 font-bold">
@@ -623,38 +702,55 @@ export function MatchingPage() {
                           </span>
                         </div>
 
-                        {/* Matched Weak Subjects */}
+                        {/* Subject-Wise Matching */}
                         <div className="mb-3.5">
                           <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                            Target Subject Coverage:
+                            Subject-Wise Matching:
                           </p>
                           <div className="flex flex-wrap gap-1.5">
                             {rec.matchedWeakSubjects.length > 0 ? (
                               rec.matchedWeakSubjects.map((s) => (
                                 <span
                                   key={s}
-                                  className="text-[11px] px-2.5 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1"
+                                  className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 font-semibold flex items-center gap-1"
                                 >
-                                  <Check className="w-3 h-3" /> {s}
+                                  <Check className="w-3 h-3" />
+                                  <span>{s}</span>
+                                  <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-800 dark:text-emerald-200 font-normal">
+                                    Tutor Strength
+                                  </span>
                                 </span>
                               ))
                             ) : (
                               <span className="text-[11px] text-slate-400 italic">
-                                Core Engineering & Foundations
+                                General Academic Synergy
                               </span>
                             )}
+
+                            {tutorMatch?.reciprocalSubjects.map((s) => (
+                              <span
+                                key={`recip-${s}`}
+                                className="text-[11px] px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/30 font-semibold flex items-center gap-1"
+                              >
+                                <ArrowLeftRight className="w-3 h-3" />
+                                <span>{s}</span>
+                                <span className="text-[9px] px-1 py-0.2 rounded bg-purple-500/20 text-purple-800 dark:text-purple-200 font-normal">
+                                  Mutual Exchange
+                                </span>
+                              </span>
+                            ))}
                           </div>
                         </div>
 
-                        {/* Explainable AI Reason Box */}
+                        {/* Why this tutor was selected */}
                         <div className="mb-4 p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60 text-xs">
                           <div className="flex items-start gap-2 text-slate-700 dark:text-slate-300 leading-relaxed">
                             <Sparkles className="w-4 h-4 text-purple-500 shrink-0 mt-0.5" />
                             <div>
                               <strong className="text-purple-600 dark:text-purple-400 block font-semibold text-[11px] mb-0.5">
-                                Why Recommended:
+                                Why this tutor was selected:
                               </strong>
-                              <span>{rec.whyRecommended}</span>
+                              <span>{tutorMatch?.whySelected || rec.whyRecommended}</span>
                             </div>
                           </div>
                         </div>
@@ -688,12 +784,30 @@ export function MatchingPage() {
       ) : (
         /* AI PEER STUDENT MATCHING VIEW */
         <div>
-          {filteredMatches.length === 0 ? (
+          {students.length === 0 ? (
             <GlassCard className="p-12 text-center">
-              <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="font-display font-semibold text-lg">No peer matches found</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Try loosening your search filters or adding more target subjects to your profile.
+              <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <h3 className="font-display font-semibold text-lg text-slate-900 dark:text-slate-100">
+                Add students to start tutor matching.
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                Every student created through the Add Student form can become a tutor for their strengths.
+              </p>
+              <Link
+                to="/students"
+                className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-xs font-semibold shadow-glow hover:opacity-95 transition-all"
+              >
+                Add Student
+              </Link>
+            </GlassCard>
+          ) : filteredMatches.length === 0 ? (
+            <GlassCard className="p-12 text-center">
+              <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <h3 className="font-display font-semibold text-lg text-slate-900 dark:text-slate-100">
+                No suitable tutor found yet.
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                Try loosening your search filters or adding more target subjects to student profiles.
               </p>
               <button
                 onClick={() => {
@@ -702,7 +816,7 @@ export function MatchingPage() {
                   setSelectedSubject('all');
                   setOnlyReciprocal(false);
                 }}
-                className="mt-4 px-4 py-2 rounded-xl bg-primary-500 text-white text-xs font-semibold"
+                className="mt-4 px-4 py-2 rounded-xl bg-primary-500 text-white text-xs font-semibold cursor-pointer hover:bg-primary-600 transition-colors"
               >
                 Reset Filters
               </button>

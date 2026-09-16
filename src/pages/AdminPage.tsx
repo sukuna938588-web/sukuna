@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer,
@@ -11,7 +11,8 @@ import {
 import { GlassCard } from '../components/ui/GlassCard';
 import { useTheme } from '../context/ThemeContext';
 import { useData } from '../context/DataContext';
-import { tutors, adminStats, liveActivity } from '../data/mockData';
+import { studentToTutor } from '../lib/matching';
+import { adminStats, liveActivity } from '../data/mockData';
 
 const PIE_COLORS = ['#3366ff', '#06b6d4', '#10b981', '#f59e0b'];
 
@@ -39,8 +40,12 @@ export function AdminPage() {
     { icon: TrendingUp, label: 'Completed Sessions', value: sessions.filter((s) => s.status === 'completed').length, suffix: '', color: 'text-warning-500' },
   ];
 
+  const studentTutors = useMemo(() => {
+    return students.map((s) => studentToTutor(s, subjects));
+  }, [students, subjects]);
+
   const filteredStudents = students.filter((s) => s.name.toLowerCase().includes(query.toLowerCase()));
-  const filteredTutors = tutors.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
+  const filteredTutors = studentTutors.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -220,29 +225,44 @@ export function AdminPage() {
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 text-sm border border-transparent focus:border-primary-500/40 focus:outline-none"
               />
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTutors.map((t) => (
-                <div key={t.id} className="p-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
-                  <div className="flex items-center gap-3 mb-3">
-                    <img src={t.avatar} alt="" className="w-12 h-12 rounded-xl bg-slate-200" />
-                    <div>
-                      <p className="font-semibold text-sm">{t.name}</p>
-                      <p className="text-xs text-slate-500">{t.department}</p>
+            {filteredTutors.length === 0 ? (
+              <div className="py-12 text-center text-slate-400">
+                <Users className="w-10 h-10 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
+                <p className="text-sm font-medium">
+                  {students.length === 0
+                    ? 'No students added yet. Click Add Student to create one.'
+                    : 'No tutors found matching your query.'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTutors.map((t) => (
+                  <div key={t.id} className="p-4 rounded-xl bg-slate-50/60 dark:bg-slate-800/40">
+                    <div className="flex items-center gap-3 mb-3">
+                      <img src={t.avatar} alt="" className="w-12 h-12 rounded-xl bg-slate-200 object-cover" />
+                      <div>
+                        <p className="font-semibold text-sm">{t.name}</p>
+                        <p className="text-xs text-slate-500">{t.department}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {t.subjects.length > 0 ? (
+                        t.subjects.map((s) => (
+                          <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300">{s}</span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] text-slate-400">Peer Student</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                      <div><Star className="w-3.5 h-3.5 text-warning-500 mx-auto" /><p className="font-semibold mt-0.5">{t.rating.toFixed(1)}</p></div>
+                      <div><TrendingUp className="w-3.5 h-3.5 text-success-500 mx-auto" /><p className="font-semibold mt-0.5">{t.successRate}%</p></div>
+                      <div><Calendar className="w-3.5 h-3.5 text-accent-500 mx-auto" /><p className="font-semibold mt-0.5">{t.sessionsCompleted}</p></div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {t.subjects.map((s) => (
-                      <span key={s} className="text-[10px] px-2 py-0.5 rounded-full bg-primary-500/10 text-primary-600 dark:text-primary-300">{s}</span>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div><Star className="w-3.5 h-3.5 text-warning-500 mx-auto" /><p className="font-semibold mt-0.5">{t.rating.toFixed(1)}</p></div>
-                    <div><TrendingUp className="w-3.5 h-3.5 text-success-500 mx-auto" /><p className="font-semibold mt-0.5">{t.successRate}%</p></div>
-                    <div><Calendar className="w-3.5 h-3.5 text-accent-500 mx-auto" /><p className="font-semibold mt-0.5">{t.sessionsCompleted}</p></div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </GlassCard>
         </motion.div>
       )}

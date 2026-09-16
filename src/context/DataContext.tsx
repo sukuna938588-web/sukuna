@@ -12,8 +12,6 @@ import {
   sessions as initialSessions,
   notifications as initialNotifications,
   currentUser as defaultCurrentUser,
-  sampleStudents,
-  sampleSubjects,
   initialActivities,
 } from '../data/mockData';
 import { loadState, saveState } from '../lib/storage';
@@ -111,28 +109,49 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return loadState<Notification[]>(NOTIFICATIONS_KEY, initialNotifications);
   });
 
+  const PURGE_MOCK_DATA_KEY = 'ss_mock_data_purged_v3';
+
   const [students, setStudents] = useState<Student[]>(() => {
-    const stored = loadState<Student[]>(STUDENTS_KEY, []);
-    if (stored.length > 0) return stored;
-    return sampleStudents;
+    try {
+      if (typeof window !== 'undefined') {
+        const purged = localStorage.getItem(PURGE_MOCK_DATA_KEY);
+        if (!purged) {
+          localStorage.setItem(PURGE_MOCK_DATA_KEY, 'true');
+          const stored = loadState<Student[]>(STUDENTS_KEY, []);
+          // Purge legacy demo students
+          const cleaned = Array.isArray(stored)
+            ? stored.filter((s) => !s.id.match(/^stu-00[2-9]$/) && s.name !== 'Diya Patel' && s.name !== 'Yash Kumar')
+            : [];
+          saveState(STUDENTS_KEY, cleaned);
+          return cleaned;
+        }
+      }
+      const stored = loadState<Student[]>(STUDENTS_KEY, []);
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
+    }
   });
 
   const [subjects, setSubjects] = useState<Subject[]>(() => {
-    const stored = loadState<Subject[]>(SUBJECTS_KEY, []);
-    if (stored.length > 0) {
-      return stored.map((s) => {
-        const fallback = sampleSubjects.find(
-          (samp) => samp.id === s.id || samp.name.toLowerCase() === s.name.toLowerCase()
-        );
-        return {
-          ...s,
-          department: s.department || fallback?.department || 'Computer Science',
-          credits: s.credits ?? fallback?.credits ?? 3,
-          description: s.description || fallback?.description || '',
-        };
-      });
+    try {
+      if (typeof window !== 'undefined') {
+        const purged = localStorage.getItem(PURGE_MOCK_DATA_KEY);
+        if (!purged) {
+          const stored = loadState<Subject[]>(SUBJECTS_KEY, []);
+          // Purge legacy demo subjects
+          const cleaned = Array.isArray(stored)
+            ? stored.filter((s) => !s.id.match(/^sub-0[0-9]{2}$/))
+            : [];
+          saveState(SUBJECTS_KEY, cleaned);
+          return cleaned;
+        }
+      }
+      const stored = loadState<Subject[]>(SUBJECTS_KEY, []);
+      return Array.isArray(stored) ? stored : [];
+    } catch {
+      return [];
     }
-    return sampleSubjects;
   });
 
   const [activities, setActivities] = useState<ActivityItem[]>(() => {
@@ -499,15 +518,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
     setCurrentUser(cleanUser);
     saveState(CURRENT_USER_KEY, cleanUser);
-    setStudents(sampleStudents);
-    setSubjects(sampleSubjects);
+    setStudents([]);
+    setSubjects([]);
+    saveState(STUDENTS_KEY, []);
+    saveState(SUBJECTS_KEY, []);
     setSessions(initialSessions);
     setNotifications(initialNotifications);
     setUsers([initialDemoUser]);
     saveState(USERS_KEY, [initialDemoUser]);
     setActivities(initialActivities);
     saveState(ACTIVITIES_KEY, initialActivities);
-    notify('Sample records have been reset.', 'info');
+    notify('Database initialized with empty students and subjects.', 'info');
   };
 
   return (

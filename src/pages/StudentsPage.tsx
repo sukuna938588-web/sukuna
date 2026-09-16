@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Search, Plus, Pencil, Trash2, Users, AlertTriangle, RotateCcw,
+  Search, Plus, Pencil, Trash2, Users, AlertTriangle,
 } from 'lucide-react';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Modal, Field, ChipInput, SelectField } from '../components/ui/Modal';
@@ -16,12 +16,11 @@ const DEPARTMENTS = ['Computer Science', 'Electrical Engineering', 'Mathematics'
 
 export function StudentsPage() {
   const { notify } = useToast();
-  const { students, subjects, addStudent, updateStudent, deleteStudent, resetSampleData } = useData();
+  const { students, subjects, addStudent, updateStudent, deleteStudent } = useData();
   const [query, setQuery] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Student | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Student | null>(null);
-  const [confirmReset, setConfirmReset] = useState(false);
 
   const subjectNames = subjects.map((s) => s.name);
 
@@ -107,9 +106,6 @@ export function StudentsPage() {
           <p className="text-sm text-slate-500 mt-1">Add, edit, and manage all student records. Data persists across refreshes.</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setConfirmReset(true)} className="px-4 py-2.5 rounded-xl glass text-sm font-medium hover:shadow-glass transition-shadow flex items-center gap-2">
-            <RotateCcw className="w-4 h-4" /> Reset Sample
-          </button>
           <button onClick={openAdd} className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold shadow-glow hover:shadow-glow-cyan transition-shadow flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add Student
           </button>
@@ -151,10 +147,21 @@ export function StudentsPage() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {students.length === 0 ? (
             <div className="py-16 text-center">
               <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">No students found. Click "Add Student" to create one.</p>
+              <p className="text-sm text-slate-500 font-medium">No students added yet. Click Add Student to create one.</p>
+              <button
+                onClick={openAdd}
+                className="mt-4 px-4 py-2.5 rounded-xl bg-gradient-to-r from-primary-500 to-accent-500 text-white text-sm font-semibold shadow-glow hover:shadow-glow-cyan transition-shadow inline-flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Add Student
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="py-16 text-center">
+              <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-sm text-slate-500 font-medium">No students matching "{query}".</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -251,22 +258,6 @@ export function StudentsPage() {
           <div className="flex gap-3">
             <button onClick={() => setConfirmDelete(null)} className="flex-1 py-2.5 rounded-xl glass font-medium">Cancel</button>
             <button onClick={handleDelete} className="flex-1 py-2.5 rounded-xl bg-error-500 text-white font-semibold hover:opacity-90 transition-opacity">Delete</button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Reset confirmation */}
-      <Modal open={confirmReset} onClose={() => setConfirmReset(false)} title="Reset to Sample Data" maxWidth="max-w-sm">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-full bg-warning-500/15 flex items-center justify-center mx-auto mb-4">
-            <RotateCcw className="w-7 h-7 text-warning-500" />
-          </div>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mb-5">
-            This will replace all current students and subjects with the original sample data. Continue?
-          </p>
-          <div className="flex gap-3">
-            <button onClick={() => setConfirmReset(false)} className="flex-1 py-2.5 rounded-xl glass font-medium">Cancel</button>
-            <button onClick={() => { resetSampleData(); notify('Sample data restored', 'success'); setConfirmReset(false); }} className="flex-1 py-2.5 rounded-xl bg-warning-500 text-white font-semibold hover:opacity-90 transition-opacity">Reset</button>
           </div>
         </div>
       </Modal>

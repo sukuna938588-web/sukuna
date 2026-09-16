@@ -1,5 +1,5 @@
 import type {
-  Student, Tutor, Session, Notification, Review, Subject, ActivityItem,
+  Student, Tutor, Session, Notification, Subject, ActivityItem,
 } from '../types';
 
 const avatar = (seed: string) =>
@@ -35,149 +35,13 @@ export const currentUser: Student = {
   bio: 'CS junior passionate about full-stack development. Looking to strengthen my fundamentals in ML and systems.',
 };
 
-// Sample subjects for demonstration
-export const sampleSubjects: Subject[] = [
-  { id: 'sub-001', name: 'Data Structures', code: 'CS201', department: 'Computer Science', credits: 4, difficulty: 'Beginner', description: 'Core principles of arrays, linked lists, binary trees, heaps, and runtime complexity analysis.' },
-  { id: 'sub-002', name: 'Algorithms', code: 'CS202', department: 'Computer Science', credits: 4, difficulty: 'Intermediate', description: 'Design paradigms including divide-and-conquer, dynamic programming, and greedy graph algorithms.' },
-  { id: 'sub-003', name: 'Operating Systems', code: 'CS301', department: 'Computer Science', credits: 4, difficulty: 'Intermediate', description: 'Process concurrency, virtual memory management, file systems, and kernel architecture.' },
-  { id: 'sub-004', name: 'Databases', code: 'CS302', department: 'Data Science', credits: 3, difficulty: 'Intermediate', description: 'Relational algebra, SQL query optimization, indexing strategies, and ACID transaction semantics.' },
-  { id: 'sub-005', name: 'Machine Learning', code: 'CS401', department: 'Data Science', credits: 4, difficulty: 'Advanced', description: 'Supervised and unsupervised models, neural networks, gradient descent, and statistical evaluation.' },
-  { id: 'sub-006', name: 'Web Development', code: 'CS205', department: 'Software Engineering', credits: 3, difficulty: 'Beginner', description: 'Modern responsive frontend architectures, RESTful APIs, state management, and cloud deployments.' },
-  { id: 'sub-007', name: 'Computer Networks', code: 'CS303', department: 'Electrical Engineering', credits: 3, difficulty: 'Intermediate', description: 'OSI protocol stack, TCP/IP congestion control, packet routing, DNS, and modern network security.' },
-  { id: 'sub-008', name: 'Discrete Math', code: 'MA201', department: 'Mathematics', credits: 4, difficulty: 'Intermediate', description: 'Set theory, combinatorics, proof techniques, propositional logic, and graph theory.' },
-  { id: 'sub-009', name: 'Java Programming', code: 'CS102', department: 'Computer Science', credits: 3, difficulty: 'Beginner', description: 'Object-oriented programming, design patterns, polymorphism, and Java Virtual Machine execution.' },
-  { id: 'sub-010', name: 'Python Programming', code: 'CS103', department: 'Data Science', credits: 3, difficulty: 'Beginner', description: 'Idiomatic scripting, scientific computing with NumPy/Pandas, and modular software packaging.' },
-];
+// Application starts with empty subjects and students databases
+export const sampleSubjects: Subject[] = [];
+export const sampleStudents: Student[] = [];
 
-// Sample students for demonstration
-const sampleStudentData = [
-  { name: 'Diya Patel', roll: 'CS21B002', dept: 'Computer Science', year: 3, str: ['Data Structures', 'Algorithms'], weak: ['Machine Learning', 'Operating Systems'] },
-  { name: 'Yash Kumar', roll: 'CS21B003', dept: 'Computer Science', year: 3, str: ['Machine Learning', 'Python Programming'], weak: ['Databases', 'Discrete Math'] },
-  { name: 'Riya Nair', roll: 'CS22B004', dept: 'Computer Science', year: 2, str: ['Web Development', 'Java Programming'], weak: ['Algorithms', 'Operating Systems'] },
-  { name: 'Sai Krishna', roll: 'CS21B005', dept: 'Computer Science', year: 3, str: ['Operating Systems', 'Computer Networks'], weak: ['Machine Learning', 'Web Development'] },
-  { name: 'Ananya Rao', roll: 'CS22B006', dept: 'Computer Science', year: 2, str: ['Databases', 'Java Programming'], weak: ['Algorithms', 'Discrete Math'] },
-  { name: 'Karan Joshi', roll: 'CS20B007', dept: 'Computer Science', year: 4, str: ['Machine Learning', 'Algorithms', 'Python Programming'], weak: ['Web Development'] },
-  { name: 'Nisha Reddy', roll: 'CS22B008', dept: 'Computer Science', year: 2, str: ['Discrete Math', 'Data Structures'], weak: ['Operating Systems', 'Computer Networks'] },
-  { name: 'Aditya Menon', roll: 'CS21B009', dept: 'Computer Science', year: 3, str: ['Java Programming', 'Databases'], weak: ['Machine Learning', 'Python Programming'] },
-];
+export const tutors: Tutor[] = [];
 
-export const sampleStudents: Student[] = sampleStudentData.map((d, i) => ({
-  id: `stu-${String(i + 2).padStart(3, '0')}`,
-  name: d.name,
-  rollNumber: d.roll,
-  email: d.name.toLowerCase().replace(/[^a-z]+/g, '.') + '@university.edu',
-  avatar: avatar(d.name),
-  department: d.dept,
-  year: d.year,
-  strengths: d.str,
-  weaknesses: d.weak,
-  skills: d.str.map((s) => ({ subject: s, rating: 75 + Math.floor(Math.random() * 20) })),
-  weakSubjects: d.weak,
-  learningPreferences: ['Visual learning', 'Hands-on projects'],
-  availability: [],
-  bio: 'Student passionate about learning and growth.',
-}));
-
-const tutorNames = [
-  'Dr. Priya Nair', 'Prof. Rohan Mehta', 'Ananya Iyer', 'Kabir Singh',
-  'Dr. Sara Khan', 'Vikram Reddy', 'Ishita Gupta', 'Arjun Verma',
-];
-const subjects = [
-  'Machine Learning', 'Operating Systems', 'Databases', 'Data Structures',
-  'Algorithms', 'Web Development', 'Computer Networks', 'Discrete Math',
-];
-
-function genExpertise(subjectsList: string[]): { subject: string; rating: number }[] {
-  return subjectsList.map((s) => ({
-    subject: s,
-    rating: 82 + Math.floor(Math.random() * 16),
-  }));
-}
-
-function genAvailability() {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-  const slots = [];
-  for (const day of days) {
-    if (Math.random() > 0.3) {
-      const start = 9 + Math.floor(Math.random() * 8);
-      slots.push({ day, start: `${String(start).padStart(2, '0')}:00`, end: `${String(start + 2).padStart(2, '0')}:00` });
-    }
-  }
-  return slots;
-}
-
-const reviewComments = [
-  'Excellent at breaking down complex topics. Very patient.',
-  'Sessions were well structured and I improved significantly.',
-  'Great mentor — gave me real-world project ideas.',
-  'Explains concepts with clear examples. Highly recommend.',
-  'Helped me ace my exam in just 3 sessions!',
-  'Very knowledgeable and approachable.',
-];
-
-export const tutors: Tutor[] = tutorNames.map((name, i) => {
-  const tutorSubjects = [subjects[i % subjects.length], subjects[(i + 3) % subjects.length], subjects[(i + 5) % subjects.length]];
-  const reviews: Review[] = Array.from({ length: 3 + (i % 3) }, (_, j) => ({
-    id: `rev-${i}-${j}`,
-    tutorId: `tut-${String(i + 1).padStart(3, '0')}`,
-    studentName: ['Meera J.', 'Karthik R.', 'Sneha P.', 'Dev A.', 'Tara M.'][j % 5],
-    rating: 4 + (j % 2),
-    comment: reviewComments[(i + j) % reviewComments.length],
-    date: `2026-0${1 + (j % 7)}-1${j % 9}`,
-  }));
-  const avgRating = reviews.reduce((a, r) => a + r.rating, 0) / reviews.length;
-  return {
-    id: `tut-${String(i + 1).padStart(3, '0')}`,
-    name,
-    email: name.toLowerCase().replace(/[^a-z]+/g, '.') + '@university.edu',
-    avatar: avatar(name),
-    department: ['Computer Science', 'Electrical Engineering', 'Mathematics', 'Data Science'][i % 4],
-    subjects: tutorSubjects,
-    expertise: genExpertise(tutorSubjects),
-    rating: Number((4.5 + (avgRating - 4) / 2).toFixed(1)),
-    reviewCount: reviews.length + 8 + i * 4,
-    successRate: 88 + Math.floor(Math.random() * 11),
-    sessionsCompleted: 120 + i * 35 + Math.floor(Math.random() * 50),
-    availability: genAvailability(),
-    hourlyRate: 25 + i * 5,
-    bio: `Specialist in ${tutorSubjects[0]} with ${3 + i} years of teaching experience. Focuses on conceptual clarity and practical application.`,
-    badges: ['Top Rated', 'Quick Responder', 'Subject Expert'].slice(0, (i % 3) + 1),
-    reviews,
-  };
-});
-
-export const sessions: Session[] = [
-  {
-    id: 'ses-001', studentId: 'stu-001', studentName: 'Aarav Sharma',
-    tutorId: 'tut-001', tutorName: 'Dr. Priya Nair', subject: 'Machine Learning',
-    date: '2026-09-02', startTime: '16:00', endTime: '17:30', status: 'scheduled',
-    mode: 'online', topic: 'Supervised Learning Algorithms',
-  },
-  {
-    id: 'ses-002', studentId: 'stu-001', studentName: 'Aarav Sharma',
-    tutorId: 'tut-003', tutorName: 'Ananya Iyer', subject: 'Operating Systems',
-    date: '2026-09-04', startTime: '15:00', endTime: '16:30', status: 'scheduled',
-    mode: 'online', topic: 'Process Scheduling & Deadlocks',
-  },
-  {
-    id: 'ses-003', studentId: 'stu-001', studentName: 'Aarav Sharma',
-    tutorId: 'tut-002', tutorName: 'Prof. Rohan Mehta', subject: 'Databases',
-    date: '2026-08-26', startTime: '17:00', endTime: '18:30', status: 'completed',
-    mode: 'in-person', topic: 'Normalization & Indexing',
-  },
-  {
-    id: 'ses-004', studentId: 'stu-001', studentName: 'Aarav Sharma',
-    tutorId: 'tut-004', tutorName: 'Kabir Singh', subject: 'Data Structures',
-    date: '2026-08-22', startTime: '16:00', endTime: '17:00', status: 'completed',
-    mode: 'online', topic: 'Graph Algorithms',
-  },
-  {
-    id: 'ses-005', studentId: 'stu-002', studentName: 'Diya Patel',
-    tutorId: 'tut-001', tutorName: 'Dr. Priya Nair', subject: 'Machine Learning',
-    date: '2026-09-03', startTime: '14:00', endTime: '15:30', status: 'scheduled',
-    mode: 'online', topic: 'Neural Networks Intro',
-  },
-];
+export const sessions: Session[] = [];
 
 export const notifications: Notification[] = [
   { id: 'n1', type: 'reminder', title: 'Session in 2 hours', message: 'Machine Learning with Dr. Priya Nair starts at 16:00.', time: '1h ago', read: false },
@@ -235,10 +99,10 @@ export const adminStats = {
 };
 
 export const liveActivity = [
-  { id: 'a1', text: 'Diya Patel booked a ML session', time: '2m ago' },
-  { id: 'a2', text: 'Karan Joshi earned the Quick Learner badge', time: '5m ago' },
+  { id: 'a1', text: 'Study session booked for Machine Learning', time: '2m ago' },
+  { id: 'a2', text: 'Student earned the Quick Learner badge', time: '5m ago' },
   { id: 'a3', text: 'Dr. Priya Nair completed 3 sessions today', time: '12m ago' },
-  { id: 'a4', text: 'Riya Nair joined a group OS study session', time: '20m ago' },
+  { id: 'a4', text: 'Group OS study session completed', time: '20m ago' },
   { id: 'a5', text: 'New tutor Ananya Iyer received 5-star review', time: '34m ago' },
 ];
 
